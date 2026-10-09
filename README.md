@@ -198,7 +198,7 @@ make help     # every target
 | Package | Responsibility |
 |---------|----------------|
 | `internal/cli` | Commands and flags (Cobra, styled by Fang) |
-| `internal/tui` | Full-screen dashboard and settings editor (Bubble Tea, Huh) |
+| `internal/tui` | Full-screen dashboard and settings screen (Bubble Tea) |
 | `internal/ui` | Line-by-line output for pipes and logs |
 | `internal/report` | Contract between the pipeline and both interfaces |
 | `internal/app` | Pipeline: sign in, discover accounts, export the datasets |
@@ -221,7 +221,7 @@ renamed field degrades instead of crashing. Contributions are welcome: see
   the Trade Republic subscription types
 - [we-promise/sure#3986](https://github.com/we-promise/sure/pull/3986), which
   documents multi-account discovery through `accountPairs`
-- [Charm](https://charm.land) for Bubble Tea, Lip Gloss, Huh and Fang
+- [Charm](https://charm.land) for Bubble Tea, Lip Gloss and Fang
 
 ## License
 

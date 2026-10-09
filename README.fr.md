@@ -204,7 +204,7 @@ make help     # toutes les cibles
 | Package | Responsabilité |
 |---------|----------------|
 | `internal/cli` | Commandes et options (Cobra, mis en forme par Fang) |
-| `internal/tui` | Tableau de bord plein écran et éditeur de réglages (Bubble Tea, Huh) |
+| `internal/tui` | Tableau de bord plein écran et écran des réglages (Bubble Tea) |
 | `internal/ui` | Sortie ligne à ligne pour les pipes et les logs |
 | `internal/report` | Contrat entre le pipeline et les deux interfaces |
 | `internal/app` | Pipeline : connexion, découverte des comptes, export |
@@ -228,7 +228,7 @@ contributions sont bienvenues : voir [CONTRIBUTING.md](CONTRIBUTING.md) et le
   complète des types de souscription Trade Republic
 - [we-promise/sure#3986](https://github.com/we-promise/sure/pull/3986), qui
   documente la découverte multi-comptes via `accountPairs`
-- [Charm](https://charm.land) pour Bubble Tea, Lip Gloss, Huh et Fang
+- [Charm](https://charm.land) pour Bubble Tea, Lip Gloss et Fang
 
 ## Licence
 
