@@ -1,0 +1,66 @@
+name: Bug report
+description: Something failed or exported the wrong data
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste credentials, a session cookie, a WAF token, an account
+        number or an unredacted export. Replace personal values with
+        placeholders.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `tr-export --version`
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: macOS 15 arm64, Chrome 141
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The failing line from the terminal output, redacted.
+      placeholder: |
+        ✗ Positions   subscription "compactPortfolioByType" rejected by Trade Republic: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. tr-export -format json
+        2. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: accounts
+    attributes:
+      label: Accounts on the login
+      multiple: true
+      options:
+        - Securities account only
+        - Securities account and PEA
+        - Crypto holdings
+        - Savings plans
+        - Other or unsure

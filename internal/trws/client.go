@@ -364,23 +364,24 @@ func (c *Client) Timeline(ctx context.Context, sub string, progress func(pages, 
 	}
 }
 
-// TransactionDetails returns the "Transaction" section of a timeline event as
-// flat key-value pairs, which is where fees, quantities and venues live.
+// TransactionDetails returns the detail view of a timeline event as flat
+// key-value pairs: fees, quantities, execution venue, document dates. Section
+// shapes vary by type, and unknown ones are skipped rather than failing the
+// whole event.
 func (c *Client) TransactionDetails(ctx context.Context, id string) (map[string]any, error) {
 	raw, err := c.request(ctx, "timelineDetailV2", map[string]any{"id": id})
 	if err != nil {
 		return nil, err
 	}
+	return parseDetails(raw)
+}
 
+func parseDetails(raw json.RawMessage) (map[string]any, error) {
 	var payload struct {
 		Sections []struct {
-			Title string `json:"title"`
-			Data  []struct {
-				Title  string `json:"title"`
-				Detail struct {
-					Text string `json:"text"`
-				} `json:"detail"`
-			} `json:"data"`
+			Title string          `json:"title"`
+			Type  string          `json:"type"`
+			Data  json.RawMessage `json:"data"`
 		} `json:"sections"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
@@ -389,16 +390,100 @@ func (c *Client) TransactionDetails(ctx context.Context, id string) (map[string]
 
 	out := make(map[string]any)
 	for _, section := range payload.Sections {
-		if section.Title != "Transaction" {
+		// Only list-shaped sections hold labeled rows. A header or banner
+		// section carries an object instead, and has nothing to flatten.
+		var items []struct {
+			Title  string          `json:"title"`
+			Detail json.RawMessage `json:"detail"`
+		}
+		if err := json.Unmarshal(section.Data, &items); err != nil {
 			continue
 		}
-		for _, item := range section.Data {
-			if item.Title != "" && item.Detail.Text != "" {
-				out["detail."+item.Title] = item.Detail.Text
+		for _, item := range items {
+			text := plainText(item.Detail)
+			if item.Title == "" || text == "" {
+				continue
 			}
+			out[detailKey(section.Title, section.Type, item.Title)] = text
 		}
 	}
 	return out, nil
+}
+
+// detailKey names a detail column, keeping the section it came from so two
+// sections cannot overwrite each other.
+func detailKey(sectionTitle, sectionType, itemTitle string) string {
+	section := sectionTitle
+	if section == "" {
+		section = sectionType
+	}
+	if section == "" {
+		return "detail." + sanitizeKey(itemTitle)
+	}
+	return "detail." + sanitizeKey(section) + "." + sanitizeKey(itemTitle)
+}
+
+// sanitizeKey keeps the dotted hierarchy readable by removing separators from
+// the labels themselves.
+func sanitizeKey(s string) string {
+	return strings.TrimSpace(strings.ReplaceAll(s, ".", " "))
+}
+
+// plainText reduces a detail value to text. It accepts a bare string, the
+// usual {"type":"text","text":"..."} wrapper, and nested wrappers such as a
+// badge whose text is itself an object. Anything else is kept as compact JSON
+// so no value is silently dropped.
+func plainText(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+
+	var decoded any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		return ""
+	}
+	if text := textOf(decoded, 0); text != "" {
+		return text
+	}
+
+	compact := strings.TrimSpace(string(raw))
+	if compact == "null" || compact == "{}" || compact == "[]" {
+		return ""
+	}
+	return compact
+}
+
+// textKeys are the fields Trade Republic uses to carry display text, in the
+// order they should be preferred.
+var textKeys = []string{"text", "displayValue", "title", "value", "subtitle"}
+
+func textOf(value any, depth int) string {
+	if depth > 4 {
+		return ""
+	}
+	switch v := value.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(v)
+	case map[string]any:
+		for _, key := range textKeys {
+			if text := textOf(v[key], depth+1); text != "" {
+				return text
+			}
+		}
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, item := range v {
+			if text := textOf(item, depth+1); text != "" {
+				parts = append(parts, text)
+			}
+		}
+		return strings.Join(parts, ", ")
+	}
+	return ""
 }
 
 // Rows normalizes a payload into table rows: a JSON array becomes its

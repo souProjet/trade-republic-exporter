@@ -109,3 +109,103 @@ func contains(s, sub string) bool {
 	}
 	return false
 }
+
+// TestParseDetailsMixedSections uses the section shapes the live API returns:
+// an object-shaped header, a table of labeled rows, a nested text wrapper and
+// a documents section whose detail is a bare string. An earlier version
+// assumed every section carried a list and failed on the first event.
+func TestParseDetailsMixedSections(t *testing.T) {
+	raw := json.RawMessage(`{
+		"id": "tx-1",
+		"sections": [
+			{"title": "Overview", "type": "header", "data": {"icon": "logos/US0378331005", "status": "executed", "timestamp": "2026-03-04T10:11:12.000+0000"}},
+			{"title": "Transaction", "type": "table", "data": [
+				{"title": "Shares", "detail": {"type": "text", "text": "1.5"}},
+				{"title": "Share price", "detail": {"type": "text", "text": "172,40 EUR"}},
+				{"title": "Fee", "detail": {"type": "badge", "text": {"type": "text", "text": "Free"}}},
+				{"title": "Venue", "detail": {"type": "iconWithText", "icon": "lsx", "text": "LS Exchange"}},
+				{"title": "Empty", "detail": {}},
+				{"title": "", "detail": {"text": "no title"}}
+			]},
+			{"title": "Documents", "type": "documents", "data": [
+				{"title": "Settlement", "detail": "4 Mar 2026"}
+			]},
+			{"title": "Banner", "type": "banner", "data": {"text": "ignored"}}
+		]
+	}`)
+
+	details, err := parseDetails(raw)
+	if err != nil {
+		t.Fatalf("parseDetails: %v", err)
+	}
+
+	want := map[string]any{
+		"detail.Transaction.Shares":      "1.5",
+		"detail.Transaction.Share price": "172,40 EUR",
+		"detail.Transaction.Fee":         "Free",
+		"detail.Transaction.Venue":       "LS Exchange",
+		"detail.Documents.Settlement":    "4 Mar 2026",
+	}
+	for key, value := range want {
+		if details[key] != value {
+			t.Errorf("details[%q] = %v, want %v", key, details[key], value)
+		}
+	}
+	if len(details) != len(want) {
+		t.Errorf("got %d details, want %d: %v", len(details), len(want), details)
+	}
+}
+
+func TestParseDetailsKeepsUnknownShapes(t *testing.T) {
+	raw := json.RawMessage(`{"sections":[{"title":"Transaction","type":"table","data":[
+		{"title":"Breakdown","detail":{"type":"chart","series":[1,2]}},
+		{"title":"Tags","detail":["a","b"]}
+	]}]}`)
+
+	details, err := parseDetails(raw)
+	if err != nil {
+		t.Fatalf("parseDetails: %v", err)
+	}
+	if got := details["detail.Transaction.Breakdown"]; got != `{"type":"chart","series":[1,2]}` {
+		t.Errorf("an unknown shape must be kept verbatim, got %v", got)
+	}
+	if got := details["detail.Transaction.Tags"]; got != "a, b" {
+		t.Errorf("details[Tags] = %v, want %q", got, "a, b")
+	}
+}
+
+func TestParseDetailsRejectsGarbage(t *testing.T) {
+	if _, err := parseDetails(json.RawMessage(`not json`)); err == nil {
+		t.Error("want an error for an undecodable payload")
+	}
+}
+
+func TestPlainText(t *testing.T) {
+	for _, tc := range []struct{ payload, want string }{
+		{`"  spaced  "`, "spaced"},
+		{`{"text":"direct"}`, "direct"},
+		{`{"displayValue":"fallback"}`, "fallback"},
+		{`{"text":{"text":{"text":"deep"}}}`, "deep"},
+		{`12.5`, "12.5"},
+		{`true`, "true"},
+		{`null`, ""},
+		{`{}`, ""},
+		{`[]`, ""},
+	} {
+		if got := plainText(json.RawMessage(tc.payload)); got != tc.want {
+			t.Errorf("plainText(%s) = %q, want %q", tc.payload, got, tc.want)
+		}
+	}
+}
+
+func TestSanitizeKey(t *testing.T) {
+	if got := detailKey("Transaction", "table", "P.R.U."); got != "detail.Transaction.P R U" {
+		t.Errorf("detailKey = %q", got)
+	}
+	if got := detailKey("", "documents", "Settlement"); got != "detail.documents.Settlement" {
+		t.Errorf("detailKey without a title = %q", got)
+	}
+	if got := detailKey("", "", "Fee"); got != "detail.Fee" {
+		t.Errorf("detailKey without a section = %q", got)
+	}
+}

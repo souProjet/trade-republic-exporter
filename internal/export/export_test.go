@@ -41,7 +41,7 @@ func TestSaveCSV(t *testing.T) {
 		{"id": "tx-2", "note": nil},
 	}
 
-	path, err := Save(dir, CSV, "transactions", rows)
+	path, err := Save(dir, CSV, European, "transactions", rows)
 	if err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestParseTimestamp(t *testing.T) {
 
 func TestSaveJSONEmpty(t *testing.T) {
 	dir := t.TempDir()
-	path, err := Save(dir, JSON, "cash", nil)
+	path, err := Save(dir, JSON, European, "cash", nil)
 	if err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -121,10 +121,39 @@ func TestSaveJSONEmpty(t *testing.T) {
 
 func TestSaveCreatesDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "out")
-	if _, err := Save(dir, JSON, "accounts", []map[string]any{{"id": 1}}); err != nil {
+	if _, err := Save(dir, JSON, European, "accounts", []map[string]any{{"id": 1}}); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "accounts.json")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSaveCSVStandardDialect(t *testing.T) {
+	dir := t.TempDir()
+	rows := []map[string]any{{"id": "tx-1", "amount": map[string]any{"value": 12.5}}}
+
+	path, err := Save(dir, CSV, Standard, "transactions", rows)
+	if err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.HasPrefix(string(raw), "\xef\xbb\xbf") {
+		t.Error("the standard dialect must not write a BOM")
+	}
+	if got, want := strings.TrimSpace(string(raw)), "amount.value,id\n12.5,tx-1"; got != want {
+		t.Errorf("content = %q, want %q", got, want)
+	}
+}
+
+func TestParseDialect(t *testing.T) {
+	if d, err := ParseDialect(" Standard "); err != nil || d.Name != "standard" {
+		t.Errorf("ParseDialect(standard) = %v, %v", d.Name, err)
+	}
+	if _, err := ParseDialect("excel"); err == nil {
+		t.Error("want an error for an unknown dialect")
 	}
 }

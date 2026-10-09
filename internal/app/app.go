@@ -1,5 +1,5 @@
-// Package app wires the login, the WebSocket session and the export pipeline
-// together, reporting progress through the ui package.
+// Package app runs an export: sign in, discover the accounts, then fetch and
+// write every selected dataset, reporting progress through report.Reporter.
 package app
 
 import (
@@ -10,39 +10,74 @@ import (
 	"time"
 
 	"github.com/souProjet/trade-republic-exporter/internal/auth"
-	"github.com/souProjet/trade-republic-exporter/internal/config"
 	"github.com/souProjet/trade-republic-exporter/internal/device"
+	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/report"
 	"github.com/souProjet/trade-republic-exporter/internal/trws"
-	"github.com/souProjet/trade-republic-exporter/internal/ui"
 	"github.com/souProjet/trade-republic-exporter/internal/waf"
 )
+
+// Phases of a run, in order.
+const (
+	PhaseAuthentication = "Authentication"
+	PhaseSession        = "Session"
+	PhaseExport         = "Export"
+)
+
+// Options is everything a run needs.
+type Options struct {
+	PhoneNumber string
+	// PIN is asked for interactively when empty.
+	PIN        string
+	DeviceInfo string
+	WAFToken   string
+
+	Format    export.Format
+	Dialect   export.Dialect
+	OutputDir string
+	Details   bool
+	// Datasets restricts the export to these names; empty selects all.
+	Datasets []string
+
+	// SaveDeviceInfo persists a newly generated device identity. Optional.
+	SaveDeviceInfo func(string) error
+}
 
 // Run executes a full export. It returns an error when the session cannot be
 // established, or when at least one dataset failed after the others were
 // written.
-func Run(ctx context.Context, cfg *config.Config, out *ui.UI) error {
+func Run(ctx context.Context, opts Options, r report.Reporter) error {
 	started := time.Now()
 
-	session, err := signIn(ctx, cfg, out)
+	session, err := signIn(ctx, opts, r)
 	if err != nil {
 		return err
 	}
 
-	out.Section("Session")
-	dialTask := out.Task("WebSocket")
+	r.Phase(PhaseSession)
+	dialTask := r.Task("WebSocket")
 	client, err := trws.Dial(ctx, session)
 	if err != nil {
 		dialTask.Fail(err)
 		return err
 	}
 	defer client.Close()
-	dialTask.Done("connected to api.traderepublic.com")
+	dialTask.Done("connected")
 
-	accounts := discoverAccounts(ctx, client, out)
+	accounts := discoverAccounts(ctx, client, r)
 
-	results, failures := collect(ctx, client, cfg, accounts, out)
-	report(out, results, failures, started)
+	r.Phase(PhaseExport)
+	files, failures := collect(ctx, client, opts, accounts, r)
+	r.Finish(report.Summary{
+		Files:     files,
+		Failed:    failures,
+		Elapsed:   time.Since(started),
+		OutputDir: opts.OutputDir,
+	})
 
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if failures > 0 {
 		return fmt.Errorf("%d dataset(s) could not be exported", failures)
 	}
@@ -51,25 +86,33 @@ func Run(ctx context.Context, cfg *config.Config, out *ui.UI) error {
 
 // signIn resolves the device identity and WAF token, then completes the
 // two-factor login and returns the session token.
-func signIn(ctx context.Context, cfg *config.Config, out *ui.UI) (string, error) {
-	out.Section("Authentication")
+func signIn(ctx context.Context, opts Options, r report.Reporter) (string, error) {
+	r.Phase(PhaseAuthentication)
 
-	deviceTask := out.Task("Device identity")
-	deviceInfo := cfg.DeviceInfo
-	if deviceInfo == "" {
+	deviceTask := r.Task("Device identity")
+	deviceInfo := opts.DeviceInfo
+	switch {
+	case deviceInfo != "":
+		deviceTask.Done("reused")
+	default:
 		generated, err := device.Info()
 		if err != nil {
 			deviceTask.Fail(err)
 			return "", err
 		}
 		deviceInfo = generated
-		deviceTask.Done("generated, set device_info to reuse it")
-	} else {
-		deviceTask.Done("from configuration")
+		if opts.SaveDeviceInfo == nil {
+			deviceTask.Done("generated")
+		} else if err := opts.SaveDeviceInfo(generated); err != nil {
+			deviceTask.Done("generated, not saved")
+			r.Warn(fmt.Sprintf("Device identity not saved: %v", err))
+		} else {
+			deviceTask.Done("generated and saved")
+		}
 	}
 
-	wafTask := out.Task("AWS WAF token")
-	wafToken := cfg.WAFToken
+	wafTask := r.Task("AWS WAF token")
+	wafToken := opts.WAFToken
 	if wafToken == "" {
 		wafTask.Update("solving the challenge in headless Chrome")
 		token, err := waf.Token(ctx)
@@ -78,27 +121,40 @@ func signIn(ctx context.Context, cfg *config.Config, out *ui.UI) (string, error)
 			return "", err
 		}
 		wafToken = token
-		wafTask.Done("solved in headless Chrome")
+		wafTask.Done("solved")
 	} else {
-		wafTask.Done("from configuration")
+		wafTask.Done("from environment")
+	}
+
+	pin := opts.PIN
+	if pin == "" {
+		answer, err := r.Ask(report.Prompt{
+			Title:       "PIN",
+			Description: "Your 4-digit Trade Republic PIN. Run `tr-export config set account.pin` to store it in the keychain and skip this step.",
+			Placeholder: "4 digits",
+			Secret:      true,
+		})
+		if err != nil {
+			return "", err
+		}
+		pin = answer
 	}
 
 	client := auth.New(wafToken, deviceInfo)
-
-	loginTask := out.Task("Login")
-	process, err := client.Start(ctx, cfg.PhoneNumber, cfg.PIN)
+	loginTask := r.Task("Login")
+	process, err := client.Start(ctx, opts.PhoneNumber, pin)
 	if err != nil {
 		loginTask.Fail(err)
 		return "", err
 	}
-	loginTask.Done("%s accepted", redactPhone(cfg.PhoneNumber))
+	loginTask.Done(RedactPhone(opts.PhoneNumber))
 
-	code, err := askCode(ctx, out, process)
+	code, err := askCode(ctx, r, process, opts.PhoneNumber)
 	if err != nil {
 		return "", err
 	}
 
-	verifyTask := out.Task("Two-factor code")
+	verifyTask := r.Task("Two-factor code")
 	session, err := process.Verify(ctx, code)
 	if err != nil {
 		verifyTask.Fail(err)
@@ -108,78 +164,71 @@ func signIn(ctx context.Context, cfg *config.Config, out *ui.UI) (string, error)
 	return session, nil
 }
 
-// askCode reads the two-factor code, offering an SMS fallback when the user
-// answers "sms" instead of a code.
-func askCode(ctx context.Context, out *ui.UI, process *auth.Process) (string, error) {
-	label := "Two-factor code (or type sms to receive one by SMS):"
+// askCode reads the two-factor code, offering to receive it by SMS instead.
+func askCode(ctx context.Context, r report.Reporter, process *auth.Process, phone string) (string, error) {
+	prompt := report.Prompt{
+		Title:            "Two-factor code",
+		Description:      "Enter the code shown in the Trade Republic app.",
+		Placeholder:      "code",
+		Alternative:      "sms",
+		AlternativeLabel: "send by SMS",
+	}
 	if process.CountdownSeconds > 0 {
-		label = fmt.Sprintf("Two-factor code, %ds left (or type sms):", process.CountdownSeconds)
+		prompt.Deadline = time.Now().Add(time.Duration(process.CountdownSeconds) * time.Second)
 	}
 
-	code, err := out.Ask(label)
-	if err != nil {
-		return "", err
-	}
-	if !strings.EqualFold(code, "sms") {
-		return code, nil
+	code, err := r.Ask(prompt)
+	if err != nil || !strings.EqualFold(code, prompt.Alternative) {
+		return code, err
 	}
 
-	smsTask := out.Task("SMS fallback")
+	smsTask := r.Task("SMS fallback")
 	if err := process.Resend(ctx); err != nil {
 		smsTask.Fail(err)
 		return "", err
 	}
 	smsTask.Done("code sent")
-	return out.Ask("Code received by SMS:")
+	return r.Ask(report.Prompt{
+		Title:       "SMS code",
+		Description: fmt.Sprintf("Enter the code sent to %s.", RedactPhone(phone)),
+		Placeholder: "code",
+	})
 }
 
 // discoverAccounts lists the customer's account pairs. A failure is not fatal:
 // the account-wide datasets can still be exported.
-func discoverAccounts(ctx context.Context, client *trws.Client, out *ui.UI) []trws.Account {
-	task := out.Task("Accounts")
+func discoverAccounts(ctx context.Context, client *trws.Client, r report.Reporter) []trws.Account {
+	task := r.Task("Accounts")
 	accounts, _, err := client.Accounts(ctx)
-	if err != nil {
-		task.Skip("not available (%s), falling back to the default account", compact(err))
+	switch {
+	case err != nil:
+		task.Skip(fmt.Sprintf("unavailable (%s), using the default account", compact(err)))
+		return nil
+	case len(accounts) == 0:
+		task.Skip("none reported, using the default account")
 		return nil
 	}
-	if len(accounts) == 0 {
-		task.Skip("none reported, falling back to the default account")
-		return nil
-	}
-	task.Done("%d found", len(accounts))
+	task.Done(fmt.Sprintf("%d found", len(accounts)))
 
-	rows := make([][]string, 0, len(accounts))
-	for _, account := range accounts {
-		rows = append(rows, []string{account.Label(), account.SecuritiesAccountNumber, account.CashAccountNumber, account.Currency})
+	views := make([]report.Account, len(accounts))
+	for i, a := range accounts {
+		views[i] = report.Account{
+			Label:      a.Label(),
+			Securities: a.SecuritiesAccountNumber,
+			Cash:       a.CashAccountNumber,
+			Currency:   a.Currency,
+		}
 	}
-	out.Table(rows)
+	r.Accounts(views)
 	return accounts
 }
 
-func report(out *ui.UI, results []result, failures int, started time.Time) {
-	out.Section("Files")
-	rows := make([][]string, 0, len(results))
-	total := 0
-	for _, r := range results {
-		total += r.rows
-		rows = append(rows, []string{r.name, fmt.Sprintf("%d rows", r.rows), r.path})
-	}
-	out.Table(rows)
-
-	summary := fmt.Sprintf("%d files, %d rows, %.1fs", len(results), total, time.Since(started).Seconds())
-	if failures > 0 {
-		summary += fmt.Sprintf(", %d failed", failures)
-	}
-	out.Section("Done")
-	out.Detail("%s", summary)
-}
-
-// redactPhone keeps the country code and the last two digits.
-func redactPhone(phone string) string {
+// RedactPhone keeps the country code and the last two digits.
+func RedactPhone(phone string) string {
 	if len(phone) < 6 {
-		return "***"
+		return "•••"
 	}
-	return phone[:3] + strings.Repeat("*", len(phone)-5) + phone[len(phone)-2:]
+	return phone[:3] + strings.Repeat("•", len(phone)-5) + phone[len(phone)-2:]
 }
 
 // compact shortens an error to one readable line.

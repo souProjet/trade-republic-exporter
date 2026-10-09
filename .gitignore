@@ -23,3 +23,6 @@ out/
 
 # Go
 vendor/
+
+# GoReleaser
+/dist/

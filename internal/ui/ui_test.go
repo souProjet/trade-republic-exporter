@@ -5,6 +5,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/souProjet/trade-republic-exporter/internal/report"
 )
 
 func newTestUI(quiet bool, input string) (*UI, *bytes.Buffer) {
@@ -89,5 +92,31 @@ func TestAskWithoutInput(t *testing.T) {
 	u, _ := newTestUI(false, "")
 	if _, err := u.Ask("Code:"); err == nil {
 		t.Error("want an error when stdin is closed")
+	}
+}
+
+func TestReporter(t *testing.T) {
+	u, buf := newTestUI(false, "123456\n")
+	r := u.Reporter()
+
+	r.Phase("Export")
+	r.Accounts([]report.Account{{Label: "PEA", Securities: "1234", Cash: "5678", Currency: "EUR"}})
+	task := r.Task("Positions")
+	task.Update("PEA")
+	task.Progress(1, 2)
+	task.Done("37 rows")
+	r.Warn("partial data")
+
+	code, err := r.Ask(report.Prompt{Title: "Two-factor code", Alternative: "sms", AlternativeLabel: "send by SMS"})
+	if err != nil || code != "123456" {
+		t.Fatalf("Ask = %q, %v", code, err)
+	}
+	r.Finish(report.Summary{Files: []report.File{{Name: "Positions", Path: "out/positions.csv", Rows: 37}}, Elapsed: 2 * time.Second})
+
+	got := buf.String()
+	for _, want := range []string{"Export", "PEA", "✓ Positions", "37 rows", "partial data", "type sms to send by SMS", "out/positions.csv", "1 files, 37 rows"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output is missing %q:\n%s", want, got)
+		}
 	}
 }

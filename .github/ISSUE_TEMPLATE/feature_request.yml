@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a dataset, an output format or a behavior change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that is not possible today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: |
+        For a new dataset, name the subscription if you know it, for example
+        `watchlist` or `priceAlarms`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered

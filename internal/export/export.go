@@ -21,6 +21,37 @@ const (
 	JSON Format = "json"
 )
 
+// Dialect controls how CSV cells are written.
+type Dialect struct {
+	Name         string
+	Comma        rune
+	DecimalComma bool
+	BOM          bool
+	TimeLayout   string
+}
+
+var (
+	// European suits spreadsheet software in most European locales.
+	European = Dialect{Name: "european", Comma: ';', DecimalComma: true, BOM: true, TimeLayout: "02/01/2006 15:04"}
+	// Standard is RFC 4180 CSV with ISO 8601 timestamps, for tools and
+	// spreadsheets in English locales.
+	Standard = Dialect{Name: "standard", Comma: ',', TimeLayout: time.RFC3339}
+)
+
+// Dialects lists the supported CSV dialects.
+var Dialects = []Dialect{European, Standard}
+
+// ParseDialect validates a user-supplied dialect name.
+func ParseDialect(s string) (Dialect, error) {
+	name := strings.ToLower(strings.TrimSpace(s))
+	for _, d := range Dialects {
+		if d.Name == name {
+			return d, nil
+		}
+	}
+	return Dialect{}, fmt.Errorf("invalid CSV dialect %q (want %q or %q)", s, European.Name, Standard.Name)
+}
+
 // ParseFormat validates a user-supplied format name.
 func ParseFormat(s string) (Format, error) {
 	switch f := Format(strings.ToLower(strings.TrimSpace(s))); f {
@@ -32,8 +63,9 @@ func ParseFormat(s string) (Format, error) {
 }
 
 // Save writes rows to dir/basename.<format> and returns the path it wrote.
-// The directory is created if it does not exist.
-func Save(dir string, format Format, basename string, rows []map[string]any) (string, error) {
+// The directory is created if it does not exist. The dialect only applies to
+// CSV.
+func Save(dir string, format Format, dialect Dialect, basename string, rows []map[string]any) (string, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("create output directory: %w", err)
 	}
@@ -48,7 +80,7 @@ func Save(dir string, format Format, basename string, rows []map[string]any) (st
 	if format == JSON {
 		err = writeJSON(f, rows)
 	} else {
-		err = writeCSV(f, rows)
+		err = writeCSV(f, dialect, rows)
 	}
 	if err != nil {
 		return "", fmt.Errorf("write %s: %w", path, err)
@@ -66,10 +98,9 @@ func writeJSON(f *os.File, rows []map[string]any) error {
 	return enc.Encode(rows)
 }
 
-// writeCSV flattens nested rows into a single header row. The dialect targets
-// spreadsheet software in European locales: UTF-8 BOM, semicolon separator and
-// comma decimal separator.
-func writeCSV(f *os.File, rows []map[string]any) error {
+// writeCSV flattens nested rows into a single header row, sorted so files
+// from different runs line up.
+func writeCSV(f *os.File, dialect Dialect, rows []map[string]any) error {
 	flat := make([]map[string]string, 0, len(rows))
 	columns := make(map[string]struct{})
 	for _, row := range rows {
@@ -86,20 +117,22 @@ func writeCSV(f *os.File, rows []map[string]any) error {
 	}
 	sort.Strings(header)
 
-	// UTF-8 BOM so spreadsheet software detects the encoding.
-	if _, err := f.Write([]byte{0xEF, 0xBB, 0xBF}); err != nil {
-		return err
+	if dialect.BOM {
+		// UTF-8 BOM so spreadsheet software detects the encoding.
+		if _, err := f.Write([]byte{0xEF, 0xBB, 0xBF}); err != nil {
+			return err
+		}
 	}
 
 	w := csv.NewWriter(f)
-	w.Comma = ';'
+	w.Comma = dialect.Comma
 	if err := w.Write(header); err != nil {
 		return err
 	}
 	record := make([]string, len(header))
 	for _, row := range flat {
 		for i, k := range header {
-			record[i] = formatValue(k, row[k])
+			record[i] = formatValue(dialect, k, row[k])
 		}
 		if err := w.Write(record); err != nil {
 			return err
@@ -149,19 +182,23 @@ var timestampLayouts = []string{
 	"2006-01-02",
 }
 
-// formatValue renders a cell for the European CSV dialect: local date and time
-// for timestamps, comma decimal separator for monetary values.
-func formatValue(key, value string) string {
+// formatValue renders a cell for the dialect: timestamps in its layout and
+// local time, monetary values with its decimal separator.
+func formatValue(dialect Dialect, key, value string) string {
 	switch {
 	case value == "":
 		return ""
 	case key == "timestamp" || strings.HasSuffix(key, "Timestamp") || strings.HasSuffix(key, ".timestamp"):
 		if t, ok := parseTimestamp(value); ok {
-			return t.Local().Format("02/01/2006 15:04")
+			return t.Local().Format(dialect.TimeLayout)
 		}
 	case strings.HasSuffix(key, ".value"), strings.HasSuffix(key, ".fractionDigits"):
 		if f, err := strconv.ParseFloat(value, 64); err == nil {
-			return strings.ReplaceAll(strconv.FormatFloat(f, 'f', -1, 64), ".", ",")
+			s := strconv.FormatFloat(f, 'f', -1, 64)
+			if dialect.DecimalComma {
+				s = strings.ReplaceAll(s, ".", ",")
+			}
+			return s
 		}
 	}
 	return value
@@ -178,4 +215,34 @@ func parseTimestamp(value string) (time.Time, bool) {
 		return time.UnixMilli(ms), true
 	}
 	return time.Time{}, false
+}
+
+// Dataset is one exportable file. Its name is the file's base name and the
+// identifier used in the configuration.
+type Dataset struct {
+	Name        string
+	Label       string
+	Description string
+}
+
+// Datasets is the catalog of exportable files, in export order.
+var Datasets = []Dataset{
+	{Name: "accounts", Label: "Accounts", Description: "Account pairs: securities account, PEA, cash accounts"},
+	{Name: "positions", Label: "Positions", Description: "Holdings of every account, crypto included"},
+	{Name: "cash", Label: "Cash balances", Description: "Cash balance of each account"},
+	{Name: "available_cash", Label: "Available cash", Description: "Cash available for trading"},
+	{Name: "transactions", Label: "Transactions", Description: "Full transaction history"},
+	{Name: "activity_log", Label: "Activity log", Description: "Logins, documents, account changes"},
+	{Name: "savings_plans", Label: "Savings plans", Description: "Recurring investment plans"},
+	{Name: "orders", Label: "Open orders", Description: "Orders not yet executed"},
+}
+
+// LookupDataset finds a dataset by name.
+func LookupDataset(name string) (Dataset, bool) {
+	for _, d := range Datasets {
+		if d.Name == name {
+			return d, true
+		}
+	}
+	return Dataset{}, false
 }

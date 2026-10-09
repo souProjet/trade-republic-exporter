@@ -31,12 +31,13 @@ var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "�
 // UI is the terminal front end. It is safe for sequential use from one
 // goroutine; a running task renders from its own goroutine.
 type UI struct {
-	mu    sync.Mutex
-	out   io.Writer
-	in    *bufio.Reader
-	color bool
-	anim  bool
-	quiet bool
+	mu     sync.Mutex
+	out    io.Writer
+	in     io.Reader
+	reader *bufio.Reader
+	color  bool
+	anim   bool
+	quiet  bool
 }
 
 // New builds a UI on w, reading prompt answers from r. Colors and animation are
@@ -46,7 +47,7 @@ func New(w io.Writer, r io.Reader, quiet bool) *UI {
 	if _, ok := os.LookupEnv("NO_COLOR"); ok {
 		tty = false
 	}
-	return &UI{out: w, in: bufio.NewReader(r), color: tty, anim: tty && !quiet, quiet: quiet}
+	return &UI{out: w, in: r, reader: bufio.NewReader(r), color: tty, anim: tty && !quiet, quiet: quiet}
 }
 
 func isTerminal(w io.Writer) bool {
@@ -157,7 +158,7 @@ func (u *UI) Ask(label string) (string, error) {
 	u.printf("  %s %s ", u.paint(cyan, "?"), label)
 	u.mu.Unlock()
 
-	line, err := u.in.ReadString('\n')
+	line, err := u.reader.ReadString('\n')
 	if err != nil {
 		return "", fmt.Errorf("read answer: %w", err)
 	}

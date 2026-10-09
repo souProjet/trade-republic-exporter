@@ -1,0 +1,66 @@
+version: 2
+
+project_name: trade-republic-exporter
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: tr-export
+    binary: tr-export
+    main: ./cmd/tr-export
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version=v{{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README.md
+      - README.fr.md
+      - LICENSE
+      - config.example.ini
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Other
+      order: 99
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+
+release:
+  footer: |
+    ## Install
+
+    ```bash
+    go install github.com/souProjet/trade-republic-exporter/cmd/tr-export@{{ .Tag }}
+    ```
+
+    Or download the archive for your platform below. Chrome or Chromium is
+    required at runtime to solve the AWS WAF challenge.
