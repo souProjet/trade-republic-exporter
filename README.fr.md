@@ -54,7 +54,7 @@ connectent, demandent le code 2FA et exportent :
 | Commande | Effet |
 |----------|-------|
 | `tr-export` | Lance un export avec les réglages enregistrés |
-| `tr-export config` | Ouvre l'éditeur de réglages |
+| `tr-export config` | Ouvre l'écran des réglages |
 | `tr-export config show` | Liste chaque réglage, sa valeur et sa provenance |
 | `tr-export config get CLÉ` | Affiche un réglage, pour les scripts |
 | `tr-export config set CLÉ VALEUR` | Modifie un réglage |
@@ -65,7 +65,17 @@ connectent, demandent le code 2FA et exportent :
 | `tr-export config reset` | Supprime les réglages et le PIN enregistré |
 | `tr-export completion SHELL` | Complétion bash, zsh, fish ou PowerShell, clés et valeurs comprises |
 
-<img src="docs/settings.svg" alt="Éditeur de réglages, page Output : format, dialecte CSV, dossier de sortie" width="820">
+L'écran des réglages présente tout sur une seule page, groupé en compte,
+export, données et interface, avec la provenance de chaque valeur et une
+explication du réglage sélectionné. `↑↓` pour naviguer, `←→` pour changer un
+choix, `entrée` pour saisir un texte ou choisir les jeux de données, `ctrl+s`
+pour enregistrer.
+
+L'interface est en français ou en anglais : `tr-export config set
+interface.language fr`, ou le réglage Langue de l'écran. Par défaut, elle suit
+la langue du système.
+
+<img src="docs/settings.svg" alt="Écran des réglages : chaque réglage groupé par section, celui sélectionné expliqué en dessous" width="820">
 
 ### Options d'export
 
@@ -101,6 +111,7 @@ valeur : environnement, fichier, trousseau ou défaut.
 | `export.datasets` | `all` | Liste séparée par des virgules, voir plus bas |
 | `export.details` | `false` | Récupère la vue détaillée de chaque transaction |
 | `interface.mode` | `auto` | `auto`, `fullscreen` ou `plain` |
+| `interface.language` | `auto` | `auto`, `en` ou `fr` ; `auto` suit la langue du système |
 
 Les variables d'environnement l'emportent sur le fichier et le trousseau, pour
 les tâches planifiées ou la CI : `TR_PHONE_NUMBER`, `TR_PIN`,

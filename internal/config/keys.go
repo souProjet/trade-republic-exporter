@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 )
 
 // Kind is the type of a setting's value.
@@ -22,7 +24,7 @@ const (
 )
 
 // Key describes one setting: where it lives, what it accepts and how it can be
-// overridden.
+// overridden. Description is in English and translated for display.
 type Key struct {
 	Name        string
 	Description string
@@ -106,6 +108,21 @@ var Keys = []Key{
 		Default:     ModeAuto,
 		Choices:     []string{ModeAuto, ModeFullscreen, ModePlain},
 	},
+	{
+		Name:        "interface.language",
+		Description: "Interface language: auto follows the system",
+		Kind:        KindChoice,
+		Default:     string(i18n.Auto),
+		Choices:     languageNames(),
+	},
+}
+
+func languageNames() []string {
+	names := make([]string, len(i18n.Languages))
+	for i, l := range i18n.Languages {
+		names[i] = string(l)
+	}
+	return names
 }
 
 // Lookup finds a key by name.
@@ -119,7 +136,7 @@ func Lookup(name string) (Key, error) {
 	for i, k := range Keys {
 		names[i] = k.Name
 	}
-	return Key{}, fmt.Errorf("unknown setting %q (valid: %s)", name, strings.Join(names, ", "))
+	return Key{}, errors.New(i18n.T("unknown setting %q (valid: %s)", name, strings.Join(names, ", ")))
 }
 
 // Normalize validates a value and returns it in canonical form.
@@ -132,23 +149,29 @@ func (k Key) Normalize(value string) (string, error) {
 	case KindBool:
 		b, err := strconv.ParseBool(value)
 		if err != nil {
-			return "", fmt.Errorf("invalid %s: %w", k.Name, fmt.Errorf("expected true or false, got %q", value))
+			return "", k.invalid(errors.New(i18n.T("expected true or false, got %q", value)))
 		}
 		return strconv.FormatBool(b), nil
 	case KindChoice:
 		value = strings.ToLower(value)
 		if !slices.Contains(k.Choices, value) {
-			return "", fmt.Errorf("invalid %s: %w", k.Name, fmt.Errorf("expected one of %s, got %q", strings.Join(k.Choices, ", "), value))
+			return "", k.invalid(errors.New(i18n.T("expected one of %s, got %q", strings.Join(k.Choices, ", "), value)))
 		}
 	case KindList:
 		value = normalizeList(value)
 	}
 	if k.validate != nil {
 		if err := k.validate(value); err != nil {
-			return "", fmt.Errorf("invalid %s: %w", k.Name, err)
+			return "", k.invalid(err)
 		}
 	}
 	return value, nil
+}
+
+// invalid wraps the reason a value was rejected; errors.Unwrap returns the
+// reason alone, for fields that already show the setting's name.
+func (k Key) invalid(reason error) error {
+	return fmt.Errorf("%s: %w", i18n.T("invalid %s", k.Name), reason)
 }
 
 func (k Key) section() string {
@@ -165,7 +188,7 @@ var phonePattern = regexp.MustCompile(`^\+[1-9][0-9]{6,14}$`)
 
 func validatePhone(v string) error {
 	if !phonePattern.MatchString(strings.ReplaceAll(v, " ", "")) {
-		return fmt.Errorf("%q is not an international phone number, for example +33612345678", v)
+		return errors.New(i18n.T("%q is not an international phone number, for example +33612345678", v))
 	}
 	return nil
 }
@@ -174,14 +197,14 @@ var pinPattern = regexp.MustCompile(`^[0-9]{4}$`)
 
 func validatePIN(v string) error {
 	if !pinPattern.MatchString(v) {
-		return fmt.Errorf("the PIN must be 4 digits")
+		return errors.New(i18n.T("the PIN must be 4 digits"))
 	}
 	return nil
 }
 
 func validateNotEmpty(v string) error {
 	if v == "" {
-		return fmt.Errorf("must not be empty")
+		return errors.New(i18n.T("must not be empty"))
 	}
 	return nil
 }
@@ -192,7 +215,7 @@ func validateDatasets(v string) error {
 	}
 	for _, name := range strings.Split(v, ",") {
 		if _, ok := export.LookupDataset(name); !ok {
-			return fmt.Errorf("unknown dataset %q (valid: %s, or all)", name, strings.Join(datasetNames(), ", "))
+			return errors.New(i18n.T("unknown dataset %q (valid: %s, or all)", name, strings.Join(datasetNames(), ", ")))
 		}
 	}
 	return nil

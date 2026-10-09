@@ -19,6 +19,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/report"
 )
 
@@ -115,12 +116,12 @@ type keyMap struct {
 
 func newKeyMap() keyMap {
 	return keyMap{
-		Quit:        key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
-		Scroll:      key.NewBinding(key.WithKeys("up", "down", "pgup", "pgdown", "k", "j"), key.WithHelp("↑/↓", "scroll log")),
-		Open:        key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open folder")),
-		Submit:      key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "confirm")),
+		Quit:        key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", i18n.T("quit"))),
+		Scroll:      key.NewBinding(key.WithKeys("up", "down", "pgup", "pgdown", "k", "j"), key.WithHelp("↑/↓", i18n.T("scroll log"))),
+		Open:        key.NewBinding(key.WithKeys("o"), key.WithHelp("o", i18n.T("open folder"))),
+		Submit:      key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", i18n.T("confirm"))),
 		Alternative: key.NewBinding(key.WithKeys("ctrl+s"), key.WithHelp("ctrl+s", "")),
-		Cancel:      key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "cancel")),
+		Cancel:      key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", i18n.T("cancel"))),
 	}
 }
 
@@ -232,7 +233,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if r := m.byID[msg.id]; r != nil {
 			r.status, r.detail, r.elapsed = msg.status, msg.detail, msg.at.Sub(r.started)
 			if msg.status == statusFailed {
-				m.log(levelError, r.label+": "+msg.detail)
+				m.log(levelError, i18n.T("%s: %s", r.label, msg.detail))
 			}
 		}
 	case accountsMsg:
@@ -244,7 +245,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.prompt.input.Focus()
 	case finishMsg:
 		m.summary = &msg.summary
-		m.log(levelInfo, fmt.Sprintf("Wrote %d files, %d rows, to %s", len(msg.summary.Files), msg.summary.Rows(), msg.summary.OutputDir))
+		m.log(levelInfo, i18n.T("Wrote %d files, %d rows, to %s", len(msg.summary.Files), msg.summary.Rows(), msg.summary.OutputDir))
 	case doneMsg:
 		m.finished, m.err, m.now = true, msg.err, time.Now()
 		if m.prompt != nil {
@@ -282,7 +283,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Cancel):
 			p.reply <- askReply{err: context.Canceled}
 			m.prompt = nil
-			m.log(levelWarn, "Canceled by user")
+			m.log(levelWarn, i18n.T("Canceled by user"))
 			m.cancel()
 			return m, nil
 		case key.Matches(msg, m.keys.Submit):
@@ -347,9 +348,9 @@ func openFolder(dir string) tea.Cmd {
 			cmd = exec.Command("xdg-open", abs)
 		}
 		if err := cmd.Start(); err != nil {
-			return logMsg{level: levelWarn, text: fmt.Sprintf("Could not open %s: %v", abs, err)}
+			return logMsg{level: levelWarn, text: i18n.T("Could not open %s: %v", abs, err)}
 		}
-		return logMsg{level: levelInfo, text: "Opened " + abs}
+		return logMsg{level: levelInfo, text: i18n.T("Opened %s", abs)}
 	}
 }
 
@@ -399,7 +400,7 @@ func (m Model) render() string {
 		return ""
 	}
 	if m.width < minWidth || m.height < minHeight {
-		msg := fmt.Sprintf("Make the terminal at least %d×%d (now %d×%d)", minWidth, minHeight, m.width, m.height)
+		msg := i18n.T("Make the terminal at least %d×%d (now %d×%d)", minWidth, minHeight, m.width, m.height)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, fg(m.pal.muted).Render(msg))
 	}
 
@@ -412,9 +413,9 @@ func (m Model) render() string {
 		leftW := max(38, min(54, m.width*9/20))
 		rightW := m.width - leftW - 1
 		body = lipgloss.JoinHorizontal(lipgloss.Top,
-			panel(m.pal, "Session", m.sessionLines(leftW-4, false), leftW, bodyH, sessionActive),
+			panel(m.pal, i18n.T("Session"), m.sessionLines(leftW-4, false), leftW, bodyH, sessionActive),
 			" ",
-			panel(m.pal, "Export", m.exportLines(rightW-4, bodyH-2), rightW, bodyH, !sessionActive && !m.finished),
+			panel(m.pal, i18n.T("Export"), m.exportLines(rightW-4, bodyH-2), rightW, bodyH, !sessionActive && !m.finished),
 		)
 	} else {
 		// Stacked: the session collapses once it is ready, and the export list
@@ -422,12 +423,12 @@ func (m Model) render() string {
 		sessionLines := m.sessionLines(m.width-4, !sessionActive)
 		topH := max(3, min(len(sessionLines)+2, bodyH-5))
 		body = lipgloss.JoinVertical(lipgloss.Left,
-			panel(m.pal, "Session", sessionLines, m.width, topH, sessionActive),
-			panel(m.pal, "Export", m.exportLines(m.width-4, bodyH-topH-2), m.width, bodyH-topH, !sessionActive && !m.finished),
+			panel(m.pal, i18n.T("Session"), sessionLines, m.width, topH, sessionActive),
+			panel(m.pal, i18n.T("Export"), m.exportLines(m.width-4, bodyH-topH-2), m.width, bodyH-topH, !sessionActive && !m.finished),
 		)
 	}
 
-	logPanel := panel(m.pal, "Log", strings.Split(m.logView.View(), "\n"), m.width, logH, false)
+	logPanel := panel(m.pal, i18n.T("Log"), strings.Split(m.logView.View(), "\n"), m.width, logH, false)
 	screen := strings.Join([]string{m.header(), "", body, logPanel, m.footer()}, "\n")
 	if m.prompt != nil {
 		screen = m.overlay(screen)
@@ -443,19 +444,19 @@ func (m Model) header() string {
 	var state string
 	switch {
 	case m.finished && m.err != nil && errors.Is(m.err, context.Canceled):
-		state = fg(m.pal.yellow).Render("○ Canceled")
+		state = fg(m.pal.yellow).Render("○ " + i18n.T("Canceled"))
 	case m.finished && m.summary == nil && m.err != nil:
-		state = fg(m.pal.red).Bold(true).Render("✗ Failed")
+		state = fg(m.pal.red).Bold(true).Render("✗ " + i18n.T("Failed"))
 	case m.finished && m.summary != nil && m.summary.Failed > 0:
-		state = fg(m.pal.yellow).Bold(true).Render(fmt.Sprintf("✓ Done · %d failed", m.summary.Failed))
+		state = fg(m.pal.yellow).Bold(true).Render("✓ " + i18n.T("Done · %d failed", m.summary.Failed))
 	case m.finished:
-		state = fg(m.pal.green).Bold(true).Render("✓ Done")
+		state = fg(m.pal.green).Bold(true).Render("✓ " + i18n.T("Done"))
 	case m.prompt != nil:
-		state = fg(m.pal.accent).Bold(true).Render("● Waiting for you")
+		state = fg(m.pal.accent).Bold(true).Render("● " + i18n.T("Waiting for you"))
 	default:
 		phase := m.phase
 		if phase == "" {
-			phase = "Starting"
+			phase = i18n.T("Starting")
 		}
 		state = fg(m.pal.accent).Render(m.spinner.View()+" ") + fg(m.pal.text).Bold(true).Render(phase)
 	}
@@ -497,10 +498,10 @@ func (m Model) sessionLines(width int, compact bool) []string {
 	var lines []string
 	switch {
 	case len(m.session) == 0:
-		lines = append(lines, m.spinnerIcon()+" "+fg(m.pal.muted).Render("Starting…"))
+		lines = append(lines, m.spinnerIcon()+" "+fg(m.pal.muted).Render(i18n.T("Starting…")))
 	case compact && m.sessionSettled():
-		lines = append(lines, fg(m.pal.green).Render("✓")+" "+fg(m.pal.text).Render("Signed in")+
-			fg(m.pal.muted).Render(fmt.Sprintf(" · %d steps", len(m.session))))
+		lines = append(lines, fg(m.pal.green).Render("✓")+" "+fg(m.pal.text).Render(i18n.T("Signed in"))+
+			fg(m.pal.muted).Render(" · "+i18n.T("%d steps", len(m.session))))
 	default:
 		for _, r := range m.session {
 			lines = append(lines, m.rowLine(r, width))
@@ -522,7 +523,7 @@ func (m Model) sessionLines(width int, compact bool) []string {
 		}
 		return lines
 	}
-	lines = append(lines, "", fg(m.pal.muted).Bold(true).Render("ACCOUNTS"))
+	lines = append(lines, "", fg(m.pal.muted).Bold(true).Render(strings.ToUpper(i18n.T("Accounts"))))
 	for _, a := range m.accounts {
 		title := fg(m.pal.text).Bold(true).Render(a.Label)
 		currency := fg(m.pal.muted).Render(a.Currency)
@@ -545,7 +546,7 @@ func (m Model) infoLines(width int, compact bool) []string {
 	for _, kv := range m.info {
 		keyW = max(keyW, ansi.StringWidth(kv[0]))
 	}
-	lines := []string{"", fg(m.pal.muted).Bold(true).Render("SETTINGS")}
+	lines := []string{"", fg(m.pal.muted).Bold(true).Render(strings.ToUpper(i18n.T("Settings")))}
 	for _, kv := range m.info {
 		lines = append(lines, fit(fg(m.pal.muted).Render(kv[0]), keyW+2)+
 			fit(fg(m.pal.text).Render(kv[1]), width-keyW-2))
@@ -566,7 +567,7 @@ func (m Model) sessionSettled() bool {
 // list is taller than the panel, it scrolls to keep the active row visible.
 func (m Model) exportLines(width, height int) []string {
 	if len(m.exports) == 0 {
-		return []string{fg(m.pal.faint).Render("Waiting for the session…")}
+		return []string{fg(m.pal.faint).Render(i18n.T("Waiting for the session…"))}
 	}
 	lines := make([]string, 0, len(m.exports)+4)
 	focus := 0
@@ -577,9 +578,9 @@ func (m Model) exportLines(width, height int) []string {
 		}
 	}
 	if s := m.summary; s != nil {
-		total := fg(m.pal.green).Bold(true).Render(fmt.Sprintf("%d files · %d rows", len(s.Files), s.Rows()))
+		total := fg(m.pal.green).Bold(true).Render(i18n.T("%d files · %d rows", len(s.Files), s.Rows()))
 		if s.Failed > 0 {
-			total += fg(m.pal.red).Render(fmt.Sprintf(" · %d failed", s.Failed))
+			total += fg(m.pal.red).Render(" · " + i18n.T("%d failed", s.Failed))
 		}
 		lines = append(lines, "", total+fg(m.pal.muted).Render(" · "+clock(s.Elapsed)),
 			fg(m.pal.muted).Render("→ ")+fg(m.pal.text).Render(s.OutputDir))
@@ -607,7 +608,7 @@ func (m Model) rowLine(r *row, width int) string {
 	case statusPending:
 		icon = fg(m.pal.faint).Render("·")
 		labelStyle = fg(m.pal.muted)
-		middle = fg(m.pal.faint).Render("waiting")
+		middle = fg(m.pal.faint).Render(i18n.T("waiting"))
 	case statusRunning:
 		icon = m.spinnerIcon()
 		labelStyle = labelStyle.Bold(true)
@@ -682,11 +683,11 @@ func (m Model) promptBox() string {
 		lines = append(lines, bar(m.pal, ratio, inner-len(secs))+fg(m.pal.muted).Render(secs), "")
 	}
 
-	hints := []string{"enter confirm"}
+	hints := []string{"enter " + i18n.T("confirm")}
 	if p.Alternative != "" {
 		hints = append(hints, "ctrl+s "+p.AlternativeLabel)
 	}
-	hints = append(hints, "esc cancel")
+	hints = append(hints, "esc "+i18n.T("cancel"))
 	lines = append(lines, fg(m.pal.faint).Render(strings.Join(hints, " · ")))
 
 	return panel(m.pal, p.Title, lines, width, len(lines)+2, true)

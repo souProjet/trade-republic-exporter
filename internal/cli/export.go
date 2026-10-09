@@ -13,6 +13,7 @@ import (
 	"github.com/souProjet/trade-republic-exporter/internal/app"
 	"github.com/souProjet/trade-republic-exporter/internal/config"
 	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/report"
 	"github.com/souProjet/trade-republic-exporter/internal/tui"
 	"github.com/souProjet/trade-republic-exporter/internal/ui"
@@ -32,14 +33,14 @@ type exportFlags struct {
 
 func (f *exportFlags) register(cmd *cobra.Command) {
 	flags := cmd.Flags()
-	flags.StringVarP(&f.format, "format", "f", "", "output format: csv or json")
-	flags.StringVar(&f.dialect, "dialect", "", "dialect for CSV files: european or standard")
-	flags.StringVarP(&f.outputDir, "out", "o", "", "output directory")
-	flags.StringSliceVar(&f.datasets, "datasets", nil, "datasets to export, comma separated: "+strings.Join(datasetNames(), ", "))
-	flags.BoolVarP(&f.details, "details", "d", false, "fetch the detail view of every transaction (slower)")
-	flags.BoolVar(&f.plain, "plain", false, "plain line output instead of the full-screen interface")
-	flags.BoolVarP(&f.quiet, "quiet", "q", false, "only print warnings and errors (implies --plain)")
-	flags.BoolVar(&f.demo, "demo", false, "preview the interface with sample data, without signing in or writing files")
+	flags.StringVarP(&f.format, "format", "f", "", i18n.T("output format: csv or json"))
+	flags.StringVar(&f.dialect, "dialect", "", i18n.T("dialect for CSV files: european or standard"))
+	flags.StringVarP(&f.outputDir, "out", "o", "", i18n.T("output directory"))
+	flags.StringSliceVar(&f.datasets, "datasets", nil, i18n.T("datasets to export, comma separated: %s", strings.Join(datasetNames(), ", ")))
+	flags.BoolVarP(&f.details, "details", "d", false, i18n.T("fetch the detail view of every transaction (slower)"))
+	flags.BoolVar(&f.plain, "plain", false, i18n.T("plain line output instead of the full-screen interface"))
+	flags.BoolVarP(&f.quiet, "quiet", "q", false, i18n.T("only print warnings and errors (implies --plain)"))
+	flags.BoolVar(&f.demo, "demo", false, i18n.T("preview the interface with sample data, without signing in or writing files"))
 
 	_ = cmd.RegisterFlagCompletionFunc("format", fixedCompletion("csv", "json"))
 	_ = cmd.RegisterFlagCompletionFunc("dialect", fixedCompletion(export.European.Name, export.Standard.Name))
@@ -72,7 +73,7 @@ func (f *exportFlags) apply(cmd *cobra.Command, s *config.Settings) error {
 	if flags.Changed("datasets") {
 		for _, name := range f.datasets {
 			if _, ok := export.LookupDataset(name); !ok {
-				return fmt.Errorf("unknown dataset %q (valid: %s)", name, strings.Join(datasetNames(), ", "))
+				return errors.New(i18n.T("unknown dataset %q (valid: %s)", name, strings.Join(datasetNames(), ", ")))
 			}
 		}
 		s.Datasets = f.datasets
@@ -88,7 +89,7 @@ func runExport(cmd *cobra.Command, g *globals, flags *exportFlags, version strin
 	}
 	settings, err := store.Settings()
 	if err != nil {
-		return fmt.Errorf("invalid settings in %s: %w\nFix them with: tr-export config", store.Path(), err)
+		return fmt.Errorf("%s\n%w", i18n.T("Invalid settings in %s, fix them with: tr-export config", store.Path()), err)
 	}
 	if err := flags.apply(cmd, &settings); err != nil {
 		return err
@@ -97,12 +98,16 @@ func runExport(cmd *cobra.Command, g *globals, flags *exportFlags, version strin
 	// First run: walk through the settings before signing in.
 	if settings.PhoneNumber == "" && !flags.demo {
 		if !interactive() {
-			return fmt.Errorf("no phone number configured: run tr-export config, or set %s and %s", config.EnvPhoneNumber, config.EnvPIN)
+			return errors.New(i18n.T("no phone number configured: run tr-export config, or set %s and %s", config.EnvPhoneNumber, config.EnvPIN))
 		}
-		notice(cmd.ErrOrStderr(), "First run: let's set up your account. Your settings will be saved to "+store.Path())
-		if err := tui.EditConfig(ctx, store); err != nil {
+		if err := tui.EditSettings(ctx, store, true); err != nil {
+			if errors.Is(err, tui.ErrAborted) {
+				notice(cmd.ErrOrStderr(), i18n.T("Nothing saved, export canceled."))
+				return nil
+			}
 			return err
 		}
+		i18n.Set(i18n.Language(store.Resolve("interface.language").Value))
 		if settings, err = store.Settings(); err != nil {
 			return err
 		}
@@ -143,7 +148,7 @@ func runExport(cmd *cobra.Command, g *globals, flags *exportFlags, version strin
 		}
 		printResult(cmd.OutOrStdout(), res)
 		if res.Interrupted {
-			return errors.New("interrupted before the export finished")
+			return errors.New(i18n.T("interrupted before the export finished"))
 		}
 		return res.Err
 	}
@@ -164,24 +169,28 @@ func useFullscreen(flags *exportFlags, mode string) bool {
 func describe(s config.Settings, demo bool) [][2]string {
 	format := strings.ToUpper(string(s.Format))
 	if s.Format == export.CSV {
-		format += " · " + s.Dialect.Name
+		dialect := i18n.T("European")
+		if s.Dialect.Name == export.Standard.Name {
+			dialect = i18n.T("Standard")
+		}
+		format += " · " + dialect
 	}
-	datasets := "all"
+	datasets := i18n.T("all")
 	if len(s.Datasets) > 0 {
 		datasets = strings.Join(s.Datasets, ", ")
 	}
-	details := "off"
+	details := i18n.T("off")
 	if s.Details {
-		details = "on"
+		details = i18n.T("on")
 	}
 	info := [][2]string{
-		{"Format", format},
-		{"Output", s.OutputDir},
-		{"Datasets", datasets},
-		{"Details", details},
+		{i18n.T("Format"), format},
+		{i18n.T("Output"), s.OutputDir},
+		{i18n.T("Datasets"), datasets},
+		{i18n.T("Details"), details},
 	}
 	if demo {
-		info = append(info, [2]string{"Mode", "demo, nothing is written"})
+		info = append(info, [2]string{i18n.T("Mode"), i18n.T("demo, nothing is written")})
 	}
 	return info
 }
@@ -193,14 +202,14 @@ func printResult(w io.Writer, res tui.Result) {
 	if s == nil {
 		return
 	}
-	headline := fmt.Sprintf("%d files, %d rows in %s", len(s.Files), s.Rows(), s.Elapsed.Round(100_000_000))
+	headline := i18n.T("%d files, %d rows in %s", len(s.Files), s.Rows(), s.Elapsed.Round(100_000_000))
 	if s.Failed > 0 {
-		headline += fmt.Sprintf(", %d failed", s.Failed)
+		headline += i18n.T(", %d failed", s.Failed)
 	}
 	success(w, headline)
 	rows := make([][]string, len(s.Files))
 	for i, f := range s.Files {
-		rows[i] = []string{f.Path, fmt.Sprintf("%d rows", f.Rows)}
+		rows[i] = []string{f.Path, i18n.T("%d rows", f.Rows)}
 	}
 	table(w, rows)
 	for _, msg := range res.Warnings {

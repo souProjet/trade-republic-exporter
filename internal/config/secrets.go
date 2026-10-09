@@ -6,6 +6,8 @@ import (
 	"runtime"
 
 	"github.com/zalando/go-keyring"
+
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 )
 
 const keyringService = "trade-republic-exporter"
@@ -14,11 +16,11 @@ const keyringService = "trade-republic-exporter"
 func KeychainName() string {
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS Keychain"
+		return i18n.T("macOS Keychain")
 	case "windows":
-		return "Windows Credential Manager"
+		return i18n.T("Windows Credential Manager")
 	default:
-		return "system keyring"
+		return i18n.T("system keyring")
 	}
 }
 
@@ -33,7 +35,7 @@ func LoadPIN(phone string) (string, error) {
 		return "", nil
 	}
 	if err != nil {
-		return "", fmt.Errorf("read PIN from the %s: %w", KeychainName(), err)
+		return "", fmt.Errorf("%s: %w", i18n.T("could not read the PIN from the %s", KeychainName()), err)
 	}
 	return pin, nil
 }
@@ -41,13 +43,13 @@ func LoadPIN(phone string) (string, error) {
 // SavePIN stores the PIN for a phone number.
 func SavePIN(phone, pin string) error {
 	if phone == "" {
-		return errors.New("set account.phone_number before storing a PIN")
+		return errors.New(i18n.T("set account.phone_number before storing a PIN"))
 	}
 	if err := validatePIN(pin); err != nil {
 		return err
 	}
 	if err := keyring.Set(keyringService, phone, pin); err != nil {
-		return fmt.Errorf("store PIN in the %s: %w (set %s in the environment instead)", KeychainName(), err, EnvPIN)
+		return fmt.Errorf("%s: %w", i18n.T("could not store the PIN in the %s, set %s in the environment instead", KeychainName(), EnvPIN), err)
 	}
 	return nil
 }
@@ -60,7 +62,7 @@ func DeletePIN(phone string) error {
 	}
 	err := keyring.Delete(keyringService, phone)
 	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
-		return fmt.Errorf("delete PIN from the %s: %w", KeychainName(), err)
+		return fmt.Errorf("%s: %w", i18n.T("could not delete the PIN from the %s", KeychainName()), err)
 	}
 	return nil
 }

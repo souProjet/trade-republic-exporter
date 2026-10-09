@@ -6,6 +6,24 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- French interface: commands, help, settings, dashboard and messages.
+  `interface.language` picks `en`, `fr` or `auto`, which follows the system
+  language.
+
+### Changed
+
+- The settings screen shows every setting on one page, grouped by section,
+  with its current value, where it comes from and an explanation, instead of a
+  page-by-page wizard. Choices switch with the arrow keys, datasets are a
+  checklist, and unsaved changes are counted and confirmed before quitting.
+- `config reset` asks with a plain y/N prompt.
+
+### Removed
+
+- The `huh` dependency.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added

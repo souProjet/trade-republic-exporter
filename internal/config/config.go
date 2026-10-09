@@ -16,6 +16,7 @@ import (
 	"gopkg.in/ini.v1"
 
 	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 )
 
 // Environment variables override the file and the keychain.
@@ -216,6 +217,7 @@ type Settings struct {
 	// Datasets is empty when every dataset is selected.
 	Datasets  []string
 	Interface string
+	Language  i18n.Language
 }
 
 // Settings resolves and validates every setting. Missing credentials are not
@@ -231,7 +233,7 @@ func (s *Store) Settings() (Settings, error) {
 		}
 		normalized, err := v.Key.Normalize(v.Value)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%w (from %s)", err, v.Source))
+			errs = append(errs, fmt.Errorf("%w (%s)", err, i18n.T("from %s", i18n.T(string(v.Source)))))
 			return v.Key.Default
 		}
 		return normalized
@@ -249,6 +251,7 @@ func (s *Store) Settings() (Settings, error) {
 		out.Datasets = strings.Split(list, ",")
 	}
 	out.Interface = value("interface.mode")
+	out.Language = i18n.Language(value("interface.language"))
 
 	return out, errors.Join(errs...)
 }

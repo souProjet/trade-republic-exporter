@@ -4,34 +4,36 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 
-	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
 	"github.com/souProjet/trade-republic-exporter/internal/config"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/tui"
 )
 
 func newConfigCmd(g *globals) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Show and edit your settings",
-		Long: `Without a subcommand, opens the interactive settings editor.
+		Short: i18n.T("Show and edit your settings"),
+		Long: i18n.T(`Without a subcommand, opens the settings screen.
 
 Settings are stored in an INI file in your user configuration directory,
 except the PIN, which goes to the system keychain. Environment variables
-override both: ` + config.EnvPhoneNumber + `, ` + config.EnvPIN + `, ` + config.EnvDeviceInfo + `.`,
-		Example: `  tr-export config                          # interactive editor
+override both: %s, %s, %s.`, config.EnvPhoneNumber, config.EnvPIN, config.EnvDeviceInfo),
+		Example: i18n.T(`  tr-export config                          # settings screen
   tr-export config show                     # every setting and where it comes from
   tr-export config set export.format json
+  tr-export config set interface.language fr
   tr-export config set account.pin          # prompts, never echoed
-  tr-export config unset export.datasets    # back to the default`,
+  tr-export config unset export.datasets    # back to the default`),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			store, err := g.openStore(cmd)
@@ -42,14 +44,14 @@ override both: ` + config.EnvPhoneNumber + `, ` + config.EnvPIN + `, ` + config.
 			if !interactive() {
 				return showConfig(w, store)
 			}
-			if err := tui.EditConfig(cmd.Context(), store); err != nil {
+			if err := tui.EditSettings(cmd.Context(), store, false); err != nil {
 				if errors.Is(err, tui.ErrAborted) {
-					notice(w, "Nothing changed")
+					notice(w, i18n.T("Nothing changed"))
 					return nil
 				}
 				return err
 			}
-			success(w, "Saved to "+store.Path())
+			success(w, i18n.T("Saved to %s", store.Path()))
 			return showConfig(w, store)
 		},
 	}
@@ -58,7 +60,7 @@ override both: ` + config.EnvPhoneNumber + `, ` + config.EnvPIN + `, ` + config.
 		&cobra.Command{
 			Use:     "show",
 			Aliases: []string{"list", "ls"},
-			Short:   "Show every setting, its value and where it comes from",
+			Short:   i18n.T("Show every setting, its value and where it comes from"),
 			Args:    cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, _ []string) error {
 				store, err := g.openStore(cmd)
@@ -69,8 +71,8 @@ override both: ` + config.EnvPhoneNumber + `, ` + config.EnvPIN + `, ` + config.
 			},
 		},
 		&cobra.Command{
-			Use:               "get KEY",
-			Short:             "Print the effective value of a setting",
+			Use:               i18n.T("get KEY"),
+			Short:             i18n.T("Print the effective value of a setting"),
 			Args:              cobra.ExactArgs(1),
 			ValidArgsFunction: keyCompletion,
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -83,18 +85,18 @@ override both: ` + config.EnvPhoneNumber + `, ` + config.EnvPIN + `, ` + config.
 					return err
 				}
 				if k.Kind == config.KindSecret {
-					return errors.New("the PIN is never printed; tr-export config show tells whether it is set")
+					return errors.New(i18n.T("the PIN is never printed; tr-export config show tells whether it is set"))
 				}
 				fmt.Fprintln(cmd.OutOrStdout(), store.Resolve(k.Name).Value)
 				return nil
 			},
 		},
 		&cobra.Command{
-			Use:   "set KEY [VALUE]",
-			Short: "Change a setting",
-			Long: `Change a setting. The PIN is not accepted as an argument, which would leave
+			Use:   i18n.T("set KEY [VALUE]"),
+			Short: i18n.T("Change a setting"),
+			Long: i18n.T(`Change a setting. The PIN is not accepted as an argument, which would leave
 it in your shell history: run "tr-export config set account.pin" and type it,
-or pipe it in with "-" as the value.`,
+or pipe it in with "-" as the value.`),
 			Args:              cobra.RangeArgs(1, 2),
 			ValidArgsFunction: valueCompletion,
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -102,8 +104,8 @@ or pipe it in with "-" as the value.`,
 			},
 		},
 		&cobra.Command{
-			Use:               "unset KEY",
-			Short:             "Remove a setting so its default applies",
+			Use:               i18n.T("unset KEY"),
+			Short:             i18n.T("Remove a setting so its default applies"),
 			Args:              cobra.ExactArgs(1),
 			ValidArgsFunction: keyCompletion,
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -117,13 +119,13 @@ or pipe it in with "-" as the value.`,
 				if err := store.Save(); err != nil {
 					return err
 				}
-				success(cmd.OutOrStdout(), args[0]+" reset to "+describeValue(store.Resolve(args[0])))
+				success(cmd.OutOrStdout(), i18n.T("%s reset to %s", args[0], describeValue(store.Resolve(args[0]))))
 				return nil
 			},
 		},
 		&cobra.Command{
 			Use:   "path",
-			Short: "Print the location of the configuration file",
+			Short: i18n.T("Print the location of the settings file"),
 			Args:  cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, _ []string) error {
 				store, err := g.openStore(cmd)
@@ -136,7 +138,7 @@ or pipe it in with "-" as the value.`,
 		},
 		&cobra.Command{
 			Use:   "edit",
-			Short: "Open the configuration file in $VISUAL or $EDITOR",
+			Short: i18n.T("Open the settings file in $VISUAL or $EDITOR"),
 			Args:  cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, _ []string) error {
 				return editConfigFile(cmd, g)
@@ -147,17 +149,21 @@ or pipe it in with "-" as the value.`,
 	return cmd
 }
 
-func showConfig(w interface{ Write([]byte) (int, error) }, store *config.Store) error {
-	location := store.Path()
+func showConfig(w io.Writer, store *config.Store) error {
+	location := shortHome(store.Path())
 	if !store.Exists() {
-		location += " (not created yet)"
+		location += " " + i18n.T("(not created yet)")
 	}
-	heading(w, "Settings", location)
+	heading(w, i18n.T("Settings"), location)
 
 	rows := make([][]string, 0, len(config.Keys))
 	for _, k := range config.Keys {
 		v := store.Resolve(k.Name)
-		rows = append(rows, []string{k.Name, describeValue(v), string(v.Source)})
+		source := ""
+		if v.Source != config.SourceUnset {
+			source = i18n.T(string(v.Source))
+		}
+		rows = append(rows, []string{k.Name, describeValue(v), source})
 	}
 	table(w, rows)
 
@@ -174,7 +180,7 @@ func showConfig(w interface{ Write([]byte) (int, error) }, store *config.Store) 
 func describeValue(v config.Value) string {
 	switch {
 	case v.Source == config.SourceUnset:
-		return "not set"
+		return i18n.T("not set")
 	case v.Key.Kind == config.KindSecret:
 		return "••••"
 	case len(v.Value) > 32:
@@ -203,16 +209,15 @@ func setConfig(cmd *cobra.Command, g *globals, args []string) error {
 		if err := store.Set(k.Name, pin); err != nil {
 			return err
 		}
-		success(w, "PIN saved to the "+config.KeychainName())
+		success(w, i18n.T("PIN saved to the %s", config.KeychainName()))
 		return nil
 	}
 
 	if len(args) < 2 {
-		hint := ""
 		if len(k.Choices) > 0 {
-			hint = " (one of: " + strings.Join(k.Choices, ", ") + ")"
+			return errors.New(i18n.T("missing value for %s (one of: %s)", k.Name, strings.Join(k.Choices, ", ")))
 		}
-		return fmt.Errorf("missing value for %s%s", k.Name, hint)
+		return errors.New(i18n.T("missing value for %s", k.Name))
 	}
 	if err := store.Set(k.Name, args[1]); err != nil {
 		return err
@@ -231,16 +236,16 @@ func readSecret(args []string) (string, error) {
 	case len(args) == 2 && args[1] == "-":
 		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		if err != nil && line == "" {
-			return "", fmt.Errorf("read PIN from stdin: %w", err)
+			return "", fmt.Errorf("%s: %w", i18n.T("could not read the PIN from stdin"), err)
 		}
 		return strings.TrimSpace(line), nil
 	case len(args) == 2:
-		return "", errors.New(`refusing a PIN on the command line, where it would stay in your shell history: run "tr-export config set account.pin" and type it, or pipe it with "-"`)
+		return "", errors.New(i18n.T(`refusing a PIN on the command line, where it would stay in your shell history: run "tr-export config set account.pin" and type it, or pipe it with "-"`))
 	case !term.IsTerminal(int(os.Stdin.Fd())):
-		return "", errNotInteractive
+		return "", errors.New(i18n.T("this needs an interactive terminal"))
 	}
 
-	fmt.Fprint(os.Stderr, "  "+lipgloss.NewStyle().Foreground(accent).Render("?")+" PIN (hidden): ")
+	fmt.Fprint(os.Stderr, "  "+lipgloss.NewStyle().Foreground(accent).Render("?")+" "+i18n.T("PIN (hidden):")+" ")
 	pin, err := term.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Fprintln(os.Stderr)
 	if err != nil {
@@ -275,7 +280,7 @@ func editConfigFile(cmd *cobra.Command, g *globals) error {
 	run := exec.CommandContext(cmd.Context(), parts[0], append(parts[1:], store.Path())...)
 	run.Stdin, run.Stdout, run.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := run.Run(); err != nil {
-		return fmt.Errorf("run %s: %w", editor, err)
+		return fmt.Errorf("%s: %w", i18n.T("could not run %s", editor), err)
 	}
 
 	reloaded, err := config.Open(store.Path())
@@ -283,9 +288,9 @@ func editConfigFile(cmd *cobra.Command, g *globals) error {
 		return err
 	}
 	if _, err := reloaded.Settings(); err != nil {
-		return fmt.Errorf("the file has invalid settings: %w", err)
+		return fmt.Errorf("%s\n%w", i18n.T("The file has invalid settings:"), err)
 	}
-	success(cmd.OutOrStdout(), "Settings are valid")
+	success(cmd.OutOrStdout(), i18n.T("Settings are valid"))
 	return nil
 }
 
@@ -293,27 +298,25 @@ func newResetCmd(g *globals) *cobra.Command {
 	var yes bool
 	cmd := &cobra.Command{
 		Use:   "reset",
-		Short: "Delete the configuration file and the stored PIN",
+		Short: i18n.T("Delete the settings file and the stored PIN"),
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			store, err := g.openStore(cmd)
 			if err != nil {
 				return err
 			}
+			w := cmd.OutOrStdout()
 			if !yes {
 				if !interactive() {
-					return errors.New("pass --yes to reset without a prompt")
+					return errors.New(i18n.T("pass --yes to reset without a prompt"))
 				}
-				confirm := false
-				err := huh.NewConfirm().
-					Title("Delete your settings?").
-					Description(store.Path() + "\nand the PIN in the " + config.KeychainName() + ". Exported files are kept.").
-					Affirmative("Delete").
-					Negative("Keep").
-					Value(&confirm).
-					Run()
-				if err != nil || !confirm {
-					notice(cmd.OutOrStdout(), "Nothing deleted")
+				question := i18n.T("Delete %s and the PIN stored in the %s? Exported files are kept. [y/N]", shortHome(store.Path()), config.KeychainName())
+				fmt.Fprint(w, "  "+lipgloss.NewStyle().Foreground(accent).Render("?")+" "+question+" ")
+				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+				switch strings.ToLower(strings.TrimSpace(answer)) {
+				case "y", "yes", "o", "oui":
+				default:
+					notice(w, i18n.T("Nothing deleted"))
 					return nil
 				}
 			}
@@ -324,12 +327,19 @@ func newResetCmd(g *globals) *cobra.Command {
 			if err := os.Remove(store.Path()); err != nil && !errors.Is(err, os.ErrNotExist) {
 				return err
 			}
-			success(cmd.OutOrStdout(), "Settings and PIN deleted")
+			success(w, i18n.T("Settings and PIN deleted"))
 			return nil
 		},
 	}
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, i18n.T("do not ask for confirmation"))
 	return cmd
+}
+
+func shortHome(path string) string {
+	if home, err := os.UserHomeDir(); err == nil && strings.HasPrefix(path, home) {
+		return "~" + strings.TrimPrefix(path, home)
+	}
+	return path
 }
 
 func keyCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
@@ -338,7 +348,7 @@ func keyCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.S
 	}
 	names := make([]string, len(config.Keys))
 	for i, k := range config.Keys {
-		names[i] = k.Name + "\t" + k.Description
+		names[i] = k.Name + "\t" + i18n.T(k.Description)
 	}
 	return names, cobra.ShellCompDirectiveNoFileComp
 }

@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/report"
 	"github.com/souProjet/trade-republic-exporter/internal/trws"
 )
@@ -42,7 +43,7 @@ func collect(ctx context.Context, client *trws.Client, opts Options, accounts []
 	steps := plan(opts, accounts)
 	labels := make([]string, len(steps))
 	for i, s := range steps {
-		labels[i] = s.Label
+		labels[i] = i18n.T(s.Label)
 	}
 	r.Plan(labels)
 
@@ -54,7 +55,7 @@ func collect(ctx context.Context, client *trws.Client, opts Options, accounts []
 		if ctx.Err() != nil {
 			break
 		}
-		task := r.Task(s.Label)
+		task := r.Task(i18n.T(s.Label))
 
 		rows, fetchErr := s.fetch(ctx, client, task)
 		if fetchErr != nil && len(rows) == 0 {
@@ -72,14 +73,14 @@ func collect(ctx context.Context, client *trws.Client, opts Options, accounts []
 			failures++
 			continue
 		}
-		task.Done(fmt.Sprintf("%d rows", len(rows)))
+		task.Done(i18n.T("%d rows", len(rows)))
 
 		// Warned only once the task has settled, so the interface never shows
 		// the warning on a row that is still running.
 		if fetchErr != nil {
-			r.Warn(fmt.Sprintf("%s: partial data (%s)", s.Label, compact(fetchErr)))
+			r.Warn(i18n.T("%s: partial data (%s)", i18n.T(s.Label), compact(fetchErr)))
 		}
-		files = append(files, report.File{Name: s.Label, Path: path, Rows: len(rows)})
+		files = append(files, report.File{Name: i18n.T(s.Label), Path: path, Rows: len(rows)})
 	}
 	return files, failures
 }
@@ -109,7 +110,7 @@ func fetchers(opts Options, accounts []trws.Account) map[string]fetchFunc {
 		"available_cash": simple("availableCash"),
 		"transactions": func(ctx context.Context, c *trws.Client, task report.Task) ([]map[string]any, error) {
 			rows, err := c.Timeline(ctx, "timelineTransactions", func(pages, items int) {
-				task.Update(fmt.Sprintf("page %d · %d transactions", pages, items))
+				task.Update(i18n.T("page %d · %d transactions", pages, items))
 			})
 			if err != nil || !opts.Details {
 				return rows, err
@@ -118,7 +119,7 @@ func fetchers(opts Options, accounts []trws.Account) map[string]fetchFunc {
 		},
 		"activity_log": func(ctx context.Context, c *trws.Client, task report.Task) ([]map[string]any, error) {
 			return c.Timeline(ctx, "timelineActivityLog", func(pages, items int) {
-				task.Update(fmt.Sprintf("page %d · %d events", pages, items))
+				task.Update(i18n.T("page %d · %d events", pages, items))
 			})
 		},
 		"savings_plans": simple("savingsPlans"),
@@ -144,7 +145,7 @@ func perAccount(ctx context.Context, accounts []trws.Account, task report.Task, 
 		if err := ctx.Err(); err != nil {
 			return all, err
 		}
-		task.Update(account.Label())
+		task.Update(i18n.T(account.Label()))
 		task.Progress(i, len(accounts))
 
 		rows, err := fetch(account)
@@ -187,7 +188,7 @@ func enrich(ctx context.Context, c *trws.Client, rows []map[string]any, task rep
 		failures int
 		enriched int
 	)
-	task.Update("fetching details")
+	task.Update(i18n.T("fetching details"))
 	for i, row := range rows {
 		if err := ctx.Err(); err != nil {
 			return rows, err
@@ -205,7 +206,7 @@ func enrich(ctx context.Context, c *trws.Client, rows []map[string]any, task rep
 			}
 			failures++
 			if enriched == 0 && failures >= maxDetailFailures {
-				return rows, fmt.Errorf("gave up enriching after %d failures: %w", failures, err)
+				return rows, fmt.Errorf("%s: %w", i18n.T("gave up enriching after %d failures", failures), err)
 			}
 			continue
 		}

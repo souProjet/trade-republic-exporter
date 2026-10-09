@@ -1,39 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="816" height="452" viewBox="0 0 816 452" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.2">
-<rect width="816" height="452" rx="10" fill="#0d1117"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="524" viewBox="0 0 800 524" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.2">
+<rect width="800" height="524" rx="10" fill="#0d1117"/>
 <circle cx="20" cy="18" r="5.5" fill="#ff5f57"/><circle cx="38" cy="18" r="5.5" fill="#febc2e"/><circle cx="56" cy="18" r="5.5" fill="#28c840"/>
-<rect x="24.0" y="44.0" width="216.0" height="18.0" fill="#2a2342"/>
-<text x="24.0" y="58.0" fill="#9d8cff" font-weight="700" textLength="216.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> ◆ Trade Republic Exporter </text>
-<text x="248.0" y="58.0" fill="#8b949e" textLength="440.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Settings · ~/.config/trade-republic-exporter/config.ini</text>
-<text x="32.0" y="94.0" fill="#6d4aff" font-weight="700" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Output</text>
-<text x="16.0" y="112.0" fill="#e6edf3" textLength="360.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">  Where the files go and what they look like.</text>
-<text x="32.0" y="130.0" fill="#6d4aff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">┃</text>
-<text x="48.0" y="130.0" fill="#6d4aff" font-weight="700" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Format</text>
-<text x="32.0" y="148.0" fill="#6d4aff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">┃</text>
-<text x="48.0" y="148.0" fill="#6d4aff" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&gt; </text>
-<text x="64.0" y="148.0" fill="#02ba84" textLength="176.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">CSV   for spreadsheets</text>
-<text x="32.0" y="166.0" fill="#6d4aff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">┃</text>
-<text x="64.0" y="166.0" fill="#e6edf3" textLength="216.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">JSON  for scripts and tools</text>
-<text x="48.0" y="202.0" fill="#656d76" font-weight="700" textLength="88.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">CSV dialect</text>
-<text x="40.0" y="220.0" fill="#e6edf3" textLength="760.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> How numbers and dates are written.                                                            </text>
-<text x="48.0" y="238.0" fill="#afb8c1" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&gt; </text>
-<text x="64.0" y="238.0" fill="#02ba84" textLength="296.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">European   ;  12,50  31/12/2026 18:30</text>
-<text x="64.0" y="256.0" fill="#e6edf3" textLength="328.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Standard   ,  12.50  2026-12-31T18:30:00Z</text>
-<text x="48.0" y="292.0" fill="#656d76" font-weight="700" textLength="128.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Output directory</text>
-<text x="40.0" y="310.0" fill="#e6edf3" textLength="760.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> Relative to where you run the command, unless absolute. ~ works.                              </text>
-<text x="48.0" y="328.0" fill="#e6edf3" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&gt; </text>
-<text x="64.0" y="328.0" fill="#e6edf3" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">out</text>
-<text x="32.0" y="382.0" fill="#626262" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">↑</text>
-<text x="48.0" y="382.0" fill="#4a4a4a" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">up</text>
-<text x="64.0" y="382.0" fill="#3c3c3c" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> • </text>
-<text x="88.0" y="382.0" fill="#626262" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">↓</text>
-<text x="104.0" y="382.0" fill="#4a4a4a" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">down</text>
-<text x="136.0" y="382.0" fill="#3c3c3c" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> • </text>
-<text x="160.0" y="382.0" fill="#626262" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">/</text>
-<text x="176.0" y="382.0" fill="#4a4a4a" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">filter</text>
-<text x="224.0" y="382.0" fill="#3c3c3c" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> • </text>
-<text x="248.0" y="382.0" fill="#626262" textLength="72.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">shift+tab</text>
-<text x="328.0" y="382.0" fill="#4a4a4a" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">back</text>
-<text x="360.0" y="382.0" fill="#3c3c3c" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> • </text>
-<text x="384.0" y="382.0" fill="#626262" textLength="40.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">enter</text>
-<text x="432.0" y="382.0" fill="#4a4a4a" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">select</text>
+<rect x="16.0" y="26.0" width="216.0" height="18.0" fill="#2a2342"/>
+<text x="16.0" y="40.0" fill="#9d8cff" font-weight="700" textLength="216.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> ◆ Trade Republic Exporter </text>
+<text x="240.0" y="40.0" fill="#e6edf3" font-weight="700" textLength="64.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Settings</text>
+<text x="632.0" y="40.0" fill="#9d8cff" textLength="144.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">● 1 unsaved change</text>
+<text x="16.0" y="76.0" fill="#9d8cff" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╭─</text>
+<text x="40.0" y="76.0" fill="#9d8cff" font-weight="700" textLength="64.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Settings</text>
+<text x="112.0" y="76.0" fill="#9d8cff" textLength="672.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">───────────────────────────────────────────────────────────────────────────────────╮</text>
+<text x="16.0" y="94.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="94.0" fill="#8b949e" font-weight="700" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">ACCOUNT</text>
+<text x="776.0" y="94.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="112.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="112.0" fill="#e6edf3" textLength="96.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Phone number</text>
+<text x="224.0" y="112.0" fill="#e6edf3" textLength="96.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">+33612345678</text>
+<text x="736.0" y="112.0" fill="#484f58" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">file</text>
+<text x="776.0" y="112.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="130.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="130.0" fill="#e6edf3" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">PIN</text>
+<text x="224.0" y="130.0" fill="#484f58" textLength="216.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">not set, asked at every run</text>
+<text x="776.0" y="130.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="148.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="776.0" y="148.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="166.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="166.0" fill="#8b949e" font-weight="700" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">EXPORT</text>
+<text x="776.0" y="166.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="184.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="184.0" fill="#e6edf3" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Format</text>
+<text x="224.0" y="184.0" fill="#e6edf3" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">CSV</text>
+<text x="712.0" y="184.0" fill="#484f58" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">default</text>
+<text x="776.0" y="184.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="202.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="202.0" fill="#9d8cff" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">▸ </text>
+<text x="48.0" y="202.0" fill="#9d8cff" font-weight="700" textLength="88.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">CSV dialect</text>
+<text x="224.0" y="202.0" fill="#9d8cff" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">‹ </text>
+<text x="240.0" y="202.0" fill="#e6edf3" font-weight="700" textLength="64.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">European</text>
+<text x="304.0" y="202.0" fill="#9d8cff" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> ›</text>
+<text x="336.0" y="202.0" fill="#8b949e" textLength="224.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">; · 12,50 · 31/12/2026 18:30</text>
+<text x="712.0" y="202.0" fill="#484f58" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">default</text>
+<text x="776.0" y="202.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="220.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="220.0" fill="#e6edf3" textLength="104.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Output folder</text>
+<text x="224.0" y="220.0" fill="#e6edf3" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">out</text>
+<text x="712.0" y="220.0" fill="#484f58" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">default</text>
+<text x="776.0" y="220.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="238.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="776.0" y="238.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="256.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="256.0" fill="#8b949e" font-weight="700" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">DATA</text>
+<text x="776.0" y="256.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="274.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="274.0" fill="#e6edf3" textLength="64.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Datasets</text>
+<text x="224.0" y="274.0" fill="#e6edf3" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">All</text>
+<text x="248.0" y="274.0" fill="#8b949e" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> (8)</text>
+<text x="712.0" y="274.0" fill="#484f58" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">default</text>
+<text x="776.0" y="274.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="292.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="292.0" fill="#e6edf3" textLength="152.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Transaction details</text>
+<text x="224.0" y="292.0" fill="#3fb950" textLength="40.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">✓ Yes</text>
+<text x="688.0" y="292.0" fill="#9d8cff" textLength="80.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">● modified</text>
+<text x="776.0" y="292.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="310.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="776.0" y="310.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="328.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="328.0" fill="#8b949e" font-weight="700" textLength="72.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">INTERFACE</text>
+<text x="776.0" y="328.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="346.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="346.0" fill="#e6edf3" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Display</text>
+<text x="224.0" y="346.0" fill="#e6edf3" textLength="72.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Automatic</text>
+<text x="712.0" y="346.0" fill="#484f58" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">default</text>
+<text x="776.0" y="346.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="364.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="48.0" y="364.0" fill="#e6edf3" textLength="64.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Language</text>
+<text x="224.0" y="364.0" fill="#e6edf3" textLength="72.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Automatic</text>
+<text x="312.0" y="364.0" fill="#8b949e" textLength="136.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">detected: English</text>
+<text x="712.0" y="364.0" fill="#484f58" textLength="56.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">default</text>
+<text x="776.0" y="364.0" fill="#9d8cff" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="382.0" fill="#9d8cff" textLength="768.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╰──────────────────────────────────────────────────────────────────────────────────────────────╯</text>
+<text x="16.0" y="400.0" fill="#30363d" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╭─</text>
+<text x="40.0" y="400.0" fill="#8b949e" font-weight="700" textLength="88.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">CSV dialect</text>
+<text x="136.0" y="400.0" fill="#30363d" textLength="648.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">────────────────────────────────────────────────────────────────────────────────╮</text>
+<text x="16.0" y="418.0" fill="#30363d" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="418.0" fill="#8b949e" textLength="736.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">European: semicolons, 12,50 and 31/12/2026 18:30, for Excel and Numbers in Europe.          </text>
+<text x="776.0" y="418.0" fill="#30363d" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="436.0" fill="#30363d" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="32.0" y="436.0" fill="#8b949e" textLength="736.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Standard: commas, 12.50 and ISO 8601 dates, for English locales, pandas and databases.      </text>
+<text x="776.0" y="436.0" fill="#30363d" textLength="8.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="16.0" y="454.0" fill="#30363d" textLength="768.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╰──────────────────────────────────────────────────────────────────────────────────────────────╯</text>
+<text x="24.0" y="490.0" fill="#e6edf3" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">↑↓</text>
+<text x="48.0" y="490.0" fill="#8b949e" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">move</text>
+<text x="80.0" y="490.0" fill="#484f58" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> · </text>
+<text x="104.0" y="490.0" fill="#e6edf3" textLength="40.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">enter</text>
+<text x="152.0" y="490.0" fill="#8b949e" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">change</text>
+<text x="200.0" y="490.0" fill="#484f58" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> · </text>
+<text x="224.0" y="490.0" fill="#e6edf3" textLength="16.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">←→</text>
+<text x="248.0" y="490.0" fill="#8b949e" textLength="96.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">switch value</text>
+<text x="344.0" y="490.0" fill="#484f58" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> · </text>
+<text x="368.0" y="490.0" fill="#e6edf3" textLength="48.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">ctrl+s</text>
+<text x="424.0" y="490.0" fill="#8b949e" textLength="104.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">save and quit</text>
+<text x="528.0" y="490.0" fill="#484f58" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve"> · </text>
+<text x="552.0" y="490.0" fill="#e6edf3" textLength="24.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">esc</text>
+<text x="584.0" y="490.0" fill="#8b949e" textLength="32.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">quit</text>
 </svg>

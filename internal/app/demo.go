@@ -3,12 +3,12 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"path/filepath"
 	"slices"
 	"time"
 
 	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/report"
 )
 
@@ -34,46 +34,46 @@ func Demo(ctx context.Context, opts Options, r report.Reporter) error {
 		return nil
 	}
 
-	r.Phase(PhaseAuthentication)
-	if err := run("Device identity", "reused", 300*time.Millisecond); err != nil {
+	r.Phase(i18n.T(PhaseAuthentication))
+	if err := run(i18n.T("Device identity"), i18n.T("reused"), 300*time.Millisecond); err != nil {
 		return err
 	}
-	waf := r.Task("AWS WAF token")
-	waf.Update("solving the challenge in headless Chrome")
+	waf := r.Task(i18n.T("AWS WAF token"))
+	waf.Update(i18n.T("solving the challenge in headless Chrome"))
 	if err := pause(1800 * time.Millisecond); err != nil {
 		return err
 	}
-	waf.Done("solved")
-	if err := run("Login", RedactPhone("+33612345678"), 500*time.Millisecond); err != nil {
+	waf.Done(i18n.T("solved"))
+	if err := run(i18n.T("Login"), RedactPhone("+33612345678"), 500*time.Millisecond); err != nil {
 		return err
 	}
 	if _, err := r.Ask(report.Prompt{
-		Title:            "Two-factor code",
-		Description:      "Demo mode: type any code.",
-		Placeholder:      "code",
+		Title:            i18n.T("Two-factor code"),
+		Description:      i18n.T("Demo mode: type any code."),
+		Placeholder:      i18n.T("code"),
 		Deadline:         time.Now().Add(60 * time.Second),
 		Alternative:      "sms",
-		AlternativeLabel: "send by SMS",
+		AlternativeLabel: i18n.T("send by SMS"),
 	}); err != nil {
 		return err
 	}
-	if err := run("Two-factor code", "session established", 400*time.Millisecond); err != nil {
+	if err := run(i18n.T("Two-factor code"), i18n.T("session established"), 400*time.Millisecond); err != nil {
 		return err
 	}
 
-	r.Phase(PhaseSession)
-	if err := run("WebSocket", "connected", 300*time.Millisecond); err != nil {
+	r.Phase(i18n.T(PhaseSession))
+	if err := run(i18n.T("WebSocket"), i18n.T("connected"), 300*time.Millisecond); err != nil {
 		return err
 	}
-	if err := run("Accounts", "2 found", 400*time.Millisecond); err != nil {
+	if err := run(i18n.T("Accounts"), i18n.T("%d found", 2), 400*time.Millisecond); err != nil {
 		return err
 	}
 	r.Accounts([]report.Account{
-		{Label: "Securities account", Securities: "0123456789", Cash: "DE00123456789", Currency: "EUR"},
-		{Label: "PEA", Securities: "1234567890", Cash: "FR00987654321", Currency: "EUR"},
+		{Label: i18n.T("Securities account"), Securities: "0123456789", Cash: "DE00123456789", Currency: "EUR"},
+		{Label: i18n.T("PEA"), Securities: "1234567890", Cash: "FR00987654321", Currency: "EUR"},
 	})
 
-	r.Phase(PhaseExport)
+	r.Phase(i18n.T(PhaseExport))
 	sample := map[string]int{
 		"accounts": 2, "positions": 37, "cash": 2, "available_cash": 2,
 		"transactions": 565, "activity_log": 388, "savings_plans": 0, "orders": 1,
@@ -86,7 +86,7 @@ func Demo(ctx context.Context, opts Options, r report.Reporter) error {
 	}
 	labels := make([]string, len(steps))
 	for i, d := range steps {
-		labels[i] = d.Label
+		labels[i] = i18n.T(d.Label)
 	}
 	r.Plan(labels)
 
@@ -96,18 +96,18 @@ func Demo(ctx context.Context, opts Options, r report.Reporter) error {
 	)
 	for _, d := range steps {
 		rows := sample[d.Name]
-		t := r.Task(d.Label)
+		t := r.Task(i18n.T(d.Label))
 		switch d.Name {
 		case "transactions", "activity_log":
 			for page := 1; page*50 < rows+50; page++ {
-				t.Update(fmt.Sprintf("page %d · %d items", page, min(page*50, rows)))
+				t.Update(i18n.T("page %d · %d transactions", page, min(page*50, rows)))
 				if err := pause(120 * time.Millisecond); err != nil {
 					t.Fail(err)
 					return err
 				}
 			}
 			if d.Name == "transactions" && opts.Details {
-				t.Update("fetching details")
+				t.Update(i18n.T("fetching details"))
 				for i := 0; i <= rows; i += 15 {
 					t.Progress(i, rows)
 					if err := pause(40 * time.Millisecond); err != nil {
@@ -118,7 +118,7 @@ func Demo(ctx context.Context, opts Options, r report.Reporter) error {
 			}
 		case "positions", "cash":
 			for i, account := range []string{"Securities account", "PEA"} {
-				t.Update(account)
+				t.Update(i18n.T(account))
 				t.Progress(i, 2)
 				if err := pause(500 * time.Millisecond); err != nil {
 					t.Fail(err)
@@ -129,7 +129,7 @@ func Demo(ctx context.Context, opts Options, r report.Reporter) error {
 			if err := pause(300 * time.Millisecond); err != nil {
 				return err
 			}
-			t.Fail(errors.New(`subscription "orders" rejected by Trade Republic (demo)`))
+			t.Fail(errors.New(i18n.T("rejected by Trade Republic (demo)")))
 			failed++
 			continue
 		default:
@@ -139,15 +139,15 @@ func Demo(ctx context.Context, opts Options, r report.Reporter) error {
 			}
 		}
 		if rows == 0 {
-			t.Skip("none reported")
+			t.Skip(i18n.T("none reported"))
 			continue
 		}
-		t.Done(fmt.Sprintf("%d rows", rows))
+		t.Done(i18n.T("%d rows", rows))
 		if d.Name == "activity_log" {
-			r.Warn("Activity log: partial data (rejected by Trade Republic, demo)")
+			r.Warn(i18n.T("%s: partial data (%s)", i18n.T(d.Label), i18n.T("rejected by Trade Republic (demo)")))
 		}
 		path := filepath.Join(opts.OutputDir, d.Name+"."+string(opts.Format))
-		files = append(files, report.File{Name: d.Label, Path: path, Rows: rows})
+		files = append(files, report.File{Name: i18n.T(d.Label), Path: path, Rows: rows})
 	}
 
 	r.Finish(report.Summary{Files: files, Failed: failed, Elapsed: time.Since(started), OutputDir: opts.OutputDir})

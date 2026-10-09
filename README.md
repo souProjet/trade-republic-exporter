@@ -52,7 +52,7 @@ exports:
 | Command | What it does |
 |---------|--------------|
 | `tr-export` | Run an export with the saved settings |
-| `tr-export config` | Open the settings editor |
+| `tr-export config` | Open the settings screen |
 | `tr-export config show` | List every setting, its value and where it comes from |
 | `tr-export config get KEY` | Print one setting, for scripts |
 | `tr-export config set KEY VALUE` | Change one setting |
@@ -63,7 +63,16 @@ exports:
 | `tr-export config reset` | Delete the settings and the stored PIN |
 | `tr-export completion SHELL` | Shell completion for bash, zsh, fish or PowerShell, settings and values included |
 
-<img src="docs/settings.svg" alt="Settings editor, Output page: format, CSV dialect, output directory" width="820">
+The settings screen lists every setting on one page, grouped by account,
+export, data and interface, with where each value comes from and an
+explanation of the focused one. `↑↓` to move, `←→` to switch a choice,
+`enter` to edit a text or pick datasets, `ctrl+s` to save.
+
+The interface speaks English and French: `tr-export config set
+interface.language fr`, or the Language setting on the screen. By default it
+follows the system language.
+
+<img src="docs/settings.svg" alt="Settings screen: every setting grouped by section, the focused one explained below" width="820">
 
 ### Export flags
 
@@ -99,6 +108,7 @@ from: environment, file, keychain or default.
 | `export.datasets` | `all` | Comma-separated list, see below |
 | `export.details` | `false` | Fetch the detail view of every transaction |
 | `interface.mode` | `auto` | `auto`, `fullscreen` or `plain` |
+| `interface.language` | `auto` | `auto`, `en` or `fr`; `auto` follows the system language |
 
 Environment variables win over the file and the keychain, for scheduled jobs
 or CI: `TR_PHONE_NUMBER`, `TR_PIN`, `TR_DEVICE_INFO`, and `TR_WAF_TOKEN` to

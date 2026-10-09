@@ -5,13 +5,13 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/souProjet/trade-republic-exporter/internal/auth"
 	"github.com/souProjet/trade-republic-exporter/internal/device"
 	"github.com/souProjet/trade-republic-exporter/internal/export"
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/report"
 	"github.com/souProjet/trade-republic-exporter/internal/trws"
 	"github.com/souProjet/trade-republic-exporter/internal/waf"
@@ -54,19 +54,19 @@ func Run(ctx context.Context, opts Options, r report.Reporter) error {
 		return err
 	}
 
-	r.Phase(PhaseSession)
-	dialTask := r.Task("WebSocket")
+	r.Phase(i18n.T(PhaseSession))
+	dialTask := r.Task(i18n.T("WebSocket"))
 	client, err := trws.Dial(ctx, session)
 	if err != nil {
 		dialTask.Fail(err)
 		return err
 	}
 	defer client.Close()
-	dialTask.Done("connected")
+	dialTask.Done(i18n.T("connected"))
 
 	accounts := discoverAccounts(ctx, client, r)
 
-	r.Phase(PhaseExport)
+	r.Phase(i18n.T(PhaseExport))
 	files, failures := collect(ctx, client, opts, accounts, r)
 	r.Finish(report.Summary{
 		Files:     files,
@@ -79,7 +79,7 @@ func Run(ctx context.Context, opts Options, r report.Reporter) error {
 		return err
 	}
 	if failures > 0 {
-		return fmt.Errorf("%d dataset(s) could not be exported", failures)
+		return errors.New(i18n.T("%d dataset(s) could not be exported", failures))
 	}
 	return nil
 }
@@ -87,13 +87,13 @@ func Run(ctx context.Context, opts Options, r report.Reporter) error {
 // signIn resolves the device identity and WAF token, then completes the
 // two-factor login and returns the session token.
 func signIn(ctx context.Context, opts Options, r report.Reporter) (string, error) {
-	r.Phase(PhaseAuthentication)
+	r.Phase(i18n.T(PhaseAuthentication))
 
-	deviceTask := r.Task("Device identity")
+	deviceTask := r.Task(i18n.T("Device identity"))
 	deviceInfo := opts.DeviceInfo
 	switch {
 	case deviceInfo != "":
-		deviceTask.Done("reused")
+		deviceTask.Done(i18n.T("reused"))
 	default:
 		generated, err := device.Info()
 		if err != nil {
@@ -102,36 +102,36 @@ func signIn(ctx context.Context, opts Options, r report.Reporter) (string, error
 		}
 		deviceInfo = generated
 		if opts.SaveDeviceInfo == nil {
-			deviceTask.Done("generated")
+			deviceTask.Done(i18n.T("generated"))
 		} else if err := opts.SaveDeviceInfo(generated); err != nil {
-			deviceTask.Done("generated, not saved")
-			r.Warn(fmt.Sprintf("Device identity not saved: %v", err))
+			deviceTask.Done(i18n.T("generated, not saved"))
+			r.Warn(i18n.T("Device identity not saved: %v", err))
 		} else {
-			deviceTask.Done("generated and saved")
+			deviceTask.Done(i18n.T("generated and saved"))
 		}
 	}
 
-	wafTask := r.Task("AWS WAF token")
+	wafTask := r.Task(i18n.T("AWS WAF token"))
 	wafToken := opts.WAFToken
 	if wafToken == "" {
-		wafTask.Update("solving the challenge in headless Chrome")
+		wafTask.Update(i18n.T("solving the challenge in headless Chrome"))
 		token, err := waf.Token(ctx)
 		if err != nil {
 			wafTask.Fail(err)
 			return "", err
 		}
 		wafToken = token
-		wafTask.Done("solved")
+		wafTask.Done(i18n.T("solved"))
 	} else {
-		wafTask.Done("from environment")
+		wafTask.Done(i18n.T("from environment"))
 	}
 
 	pin := opts.PIN
 	if pin == "" {
 		answer, err := r.Ask(report.Prompt{
-			Title:       "PIN",
-			Description: "Your 4-digit Trade Republic PIN. Run `tr-export config set account.pin` to store it in the keychain and skip this step.",
-			Placeholder: "4 digits",
+			Title:       i18n.T("PIN"),
+			Description: i18n.T("Your 4-digit Trade Republic PIN. Run `tr-export config set account.pin` to store it in the keychain and skip this step."),
+			Placeholder: i18n.T("4 digits"),
 			Secret:      true,
 		})
 		if err != nil {
@@ -141,7 +141,7 @@ func signIn(ctx context.Context, opts Options, r report.Reporter) (string, error
 	}
 
 	client := auth.New(wafToken, deviceInfo)
-	loginTask := r.Task("Login")
+	loginTask := r.Task(i18n.T("Login"))
 	process, err := client.Start(ctx, opts.PhoneNumber, pin)
 	if err != nil {
 		loginTask.Fail(err)
@@ -154,24 +154,24 @@ func signIn(ctx context.Context, opts Options, r report.Reporter) (string, error
 		return "", err
 	}
 
-	verifyTask := r.Task("Two-factor code")
+	verifyTask := r.Task(i18n.T("Two-factor code"))
 	session, err := process.Verify(ctx, code)
 	if err != nil {
 		verifyTask.Fail(err)
 		return "", err
 	}
-	verifyTask.Done("session established")
+	verifyTask.Done(i18n.T("session established"))
 	return session, nil
 }
 
 // askCode reads the two-factor code, offering to receive it by SMS instead.
 func askCode(ctx context.Context, r report.Reporter, process *auth.Process, phone string) (string, error) {
 	prompt := report.Prompt{
-		Title:            "Two-factor code",
-		Description:      "Enter the code shown in the Trade Republic app.",
-		Placeholder:      "code",
+		Title:            i18n.T("Two-factor code"),
+		Description:      i18n.T("Enter the code shown in the Trade Republic app."),
+		Placeholder:      i18n.T("code"),
 		Alternative:      "sms",
-		AlternativeLabel: "send by SMS",
+		AlternativeLabel: i18n.T("send by SMS"),
 	}
 	if process.CountdownSeconds > 0 {
 		prompt.Deadline = time.Now().Add(time.Duration(process.CountdownSeconds) * time.Second)
@@ -182,38 +182,38 @@ func askCode(ctx context.Context, r report.Reporter, process *auth.Process, phon
 		return code, err
 	}
 
-	smsTask := r.Task("SMS fallback")
+	smsTask := r.Task(i18n.T("SMS fallback"))
 	if err := process.Resend(ctx); err != nil {
 		smsTask.Fail(err)
 		return "", err
 	}
-	smsTask.Done("code sent")
+	smsTask.Done(i18n.T("code sent"))
 	return r.Ask(report.Prompt{
-		Title:       "SMS code",
-		Description: fmt.Sprintf("Enter the code sent to %s.", RedactPhone(phone)),
-		Placeholder: "code",
+		Title:       i18n.T("SMS code"),
+		Description: i18n.T("Enter the code sent to %s.", RedactPhone(phone)),
+		Placeholder: i18n.T("code"),
 	})
 }
 
 // discoverAccounts lists the customer's account pairs. A failure is not fatal:
 // the account-wide datasets can still be exported.
 func discoverAccounts(ctx context.Context, client *trws.Client, r report.Reporter) []trws.Account {
-	task := r.Task("Accounts")
+	task := r.Task(i18n.T("Accounts"))
 	accounts, _, err := client.Accounts(ctx)
 	switch {
 	case err != nil:
-		task.Skip(fmt.Sprintf("unavailable (%s), using the default account", compact(err)))
+		task.Skip(i18n.T("unavailable (%s), using the default account", compact(err)))
 		return nil
 	case len(accounts) == 0:
-		task.Skip("none reported, using the default account")
+		task.Skip(i18n.T("none reported, using the default account"))
 		return nil
 	}
-	task.Done(fmt.Sprintf("%d found", len(accounts)))
+	task.Done(i18n.T("%d found", len(accounts)))
 
 	views := make([]report.Account, len(accounts))
 	for i, a := range accounts {
 		views[i] = report.Account{
-			Label:      a.Label(),
+			Label:      i18n.T(a.Label()),
 			Securities: a.SecuritiesAccountNumber,
 			Cash:       a.CashAccountNumber,
 			Currency:   a.Currency,
@@ -235,7 +235,7 @@ func RedactPhone(phone string) string {
 func compact(err error) string {
 	var apiErr *trws.APIError
 	if errors.As(err, &apiErr) {
-		return "rejected by Trade Republic"
+		return i18n.T("rejected by Trade Republic")
 	}
 	msg := strings.ReplaceAll(err.Error(), "\n", " ")
 	if len(msg) > 90 {

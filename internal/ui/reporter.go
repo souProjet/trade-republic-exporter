@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/term"
 
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 	"github.com/souProjet/trade-republic-exporter/internal/report"
 )
 
@@ -45,10 +46,10 @@ func (r *plainReporter) Ask(p report.Prompt) (string, error) {
 	}
 	label := p.Title
 	if !p.Deadline.IsZero() {
-		label += fmt.Sprintf(", %ds left", int(time.Until(p.Deadline).Seconds()))
+		label += ", " + i18n.T("%ds left", int(time.Until(p.Deadline).Seconds()))
 	}
 	if p.Alternative != "" {
-		label += fmt.Sprintf(" (or type %s to %s)", p.Alternative, p.AlternativeLabel)
+		label += " " + i18n.T("(or type %s to %s)", p.Alternative, p.AlternativeLabel)
 	}
 	label += ":"
 
@@ -60,7 +61,7 @@ func (r *plainReporter) Ask(p report.Prompt) (string, error) {
 			secret, err := term.ReadPassword(int(f.Fd()))
 			r.ui.printf("\n")
 			if err != nil {
-				return "", fmt.Errorf("read answer: %w", err)
+				return "", fmt.Errorf("%s: %w", i18n.T("could not read the answer"), err)
 			}
 			return strings.TrimSpace(string(secret)), nil
 		}
@@ -69,18 +70,18 @@ func (r *plainReporter) Ask(p report.Prompt) (string, error) {
 }
 
 func (r *plainReporter) Finish(s report.Summary) {
-	r.ui.Section("Files")
+	r.ui.Section(i18n.T("Files"))
 	rows := make([][]string, len(s.Files))
 	for i, f := range s.Files {
-		rows[i] = []string{f.Name, fmt.Sprintf("%d rows", f.Rows), f.Path}
+		rows[i] = []string{f.Name, i18n.T("%d rows", f.Rows), f.Path}
 	}
 	r.ui.Table(rows)
 
-	line := fmt.Sprintf("%d files, %d rows, %.1fs", len(s.Files), s.Rows(), s.Elapsed.Seconds())
+	line := i18n.T("%d files, %d rows in %s", len(s.Files), s.Rows(), s.Elapsed.Round(100*time.Millisecond))
 	if s.Failed > 0 {
-		line += fmt.Sprintf(", %d failed", s.Failed)
+		line += i18n.T(", %d failed", s.Failed)
 	}
-	r.ui.Section("Done")
+	r.ui.Section(i18n.T("Done"))
 	r.ui.Detail("%s", line)
 }
 

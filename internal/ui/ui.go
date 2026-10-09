@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/souProjet/trade-republic-exporter/internal/i18n"
 )
 
 const (
@@ -160,7 +162,7 @@ func (u *UI) Ask(label string) (string, error) {
 
 	line, err := u.reader.ReadString('\n')
 	if err != nil {
-		return "", fmt.Errorf("read answer: %w", err)
+		return "", fmt.Errorf("%s: %w", i18n.T("could not read the answer"), err)
 	}
 	return strings.TrimSpace(line), nil
 }
