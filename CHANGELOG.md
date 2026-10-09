@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-09
+
 ### Added
 
 - French interface: commands, help, settings, dashboard and messages.
@@ -87,6 +89,7 @@ First public release.
 - Credentials from an INI file or from `TR_PHONE_NUMBER` and `TR_PIN`.
 - Two-factor login with an SMS fallback.
 
-[Unreleased]: https://github.com/souProjet/trade-republic-exporter/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/souProjet/trade-republic-exporter/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/souProjet/trade-republic-exporter/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/souProjet/trade-republic-exporter/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/souProjet/trade-republic-exporter/releases/tag/v0.1.0
