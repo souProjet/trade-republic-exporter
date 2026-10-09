@@ -1,0 +1,25 @@
+# Binaries
+/trade-republic-exporter
+/tr-export
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Config with secrets
+config.ini
+
+# Output
+out/
+*.csv
+*.json
+!config.example.ini
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Go
+vendor/
